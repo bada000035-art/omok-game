@@ -1,0 +1,911 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>홍영주 할머니의 체질 맞추기 퀴즈!</title>
+<style>
+* { box-sizing: border-box; -webkit-tap-highlight-color: transparent; margin: 0; padding: 0; }
+html, body {
+  font-family: "Apple SD Gothic Neo", "Malgun Gothic", "Pretendard", sans-serif;
+  background: #FBF3E4;
+  color: #2E2A22;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+#app {
+  max-width: 620px;
+  margin: 0 auto;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  padding: 16px 16px 40px;
+  position: relative;
+}
+
+/* ===== 화면 전환 ===== */
+.screen { display: none; flex: 1; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 14px; }
+.screen.show { display: flex; }
+.quiz-screen { display: none; flex-direction: column; flex: 1; }
+.quiz-screen.show { display: flex; }
+
+/* ===== 타이틀 화면 ===== */
+.title-photo {
+  width: 170px; height: 170px;
+  object-fit: cover; border-radius: 50%;
+  border: 6px solid #CC5500;
+  animation: dance 2s ease-in-out infinite;
+  transform-origin: 50% 90%;
+  box-shadow: 0 8px 24px rgba(0,0,0,0.18);
+}
+.title-main { font-size: 34px; font-weight: 900; line-height: 1.35; color: #7A2E00; }
+.title-sub { font-size: 17px; color: #6B5040; line-height: 1.7; }
+.legend {
+  display: flex; flex-wrap: wrap; gap: 8px; justify-content: center;
+  font-size: 15px; font-weight: 700;
+}
+.legend span { padding: 4px 12px; border-radius: 999px; border: 3px solid; }
+.rules-box {
+  background: #FFF8EE; border: 3px solid #D89060;
+  border-radius: 18px; padding: 14px 18px;
+  font-size: 15px; line-height: 2.0;
+  text-align: left; color: #5A3A20;
+  max-width: 380px; width: 100%;
+}
+.big-btn {
+  width: 100%; max-width: 340px;
+  font-size: 24px; font-weight: 900;
+  padding: 18px; border-radius: 18px;
+  border: none; background: #CC5500;
+  color: #FFF; cursor: pointer;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.15);
+  transition: transform 0.1s;
+}
+.big-btn:active { transform: scale(0.97); }
+
+/* ===== 상단 HUD ===== */
+.topbar {
+  display: flex; align-items: center; gap: 10px;
+  margin-bottom: 10px;
+}
+.lives-display { display: flex; gap: 3px; font-size: 22px; flex-shrink: 0; }
+.heart { display: inline-block; transition: transform 0.3s, opacity 0.3s; }
+.heart.lost { opacity: 0.18; transform: scale(0.65); }
+.heart.breaking { animation: heartBreak 0.45s ease forwards; }
+.progress-track {
+  flex: 1; height: 16px;
+  background: #E8DEC8; border-radius: 999px;
+  overflow: hidden; border: 2px solid #D0C0A0;
+}
+.progress-fill {
+  height: 100%; background: #4F9D6E;
+  border-radius: 999px; transition: width 0.4s ease;
+}
+.score-pill {
+  font-size: 17px; font-weight: 900;
+  background: #FFF; border: 3px solid #D0C0A0;
+  border-radius: 999px; padding: 4px 14px;
+  white-space: nowrap; min-width: 72px; text-align: center;
+}
+.score-pill.happy-pill {
+  background: #FFF8D0; border-color: #FFB800; color: #AA5500;
+  animation: pillPulse 0.7s ease-in-out infinite alternate;
+}
+
+/* ===== 마스코트 영역 ===== */
+.mascot-zone {
+  display: flex; flex-direction: column; align-items: center;
+  position: relative; margin-bottom: 10px;
+}
+.talk-bubble {
+  background: #FFF; border: 3px solid #2E2A22;
+  border-radius: 16px; padding: 8px 14px;
+  font-size: 15px; font-weight: 700; line-height: 1.5;
+  text-align: center; max-width: 300px;
+  min-height: 38px; margin-bottom: 6px;
+  position: relative;
+  opacity: 0; transition: opacity 0.25s;
+}
+.talk-bubble.show { opacity: 1; }
+.talk-bubble::after {
+  content: '';
+  position: absolute; bottom: -12px; left: 50%;
+  transform: translateX(-50%);
+  border: 6px solid transparent;
+  border-top-color: #2E2A22;
+}
+.talk-bubble.angry-bubble {
+  border-color: #CC1100; background: #FFF0EE; color: #BB1100;
+}
+.talk-bubble.angry-bubble::after { border-top-color: #CC1100; }
+.talk-bubble.happy-bubble {
+  border-color: #FF9900; background: #FFFADD; color: #AA5500;
+}
+.talk-bubble.happy-bubble::after { border-top-color: #FF9900; }
+
+.mascot-wrap {
+  position: relative; display: inline-block;
+}
+.mascot-img {
+  width: 120px; height: 120px;
+  object-fit: cover; border-radius: 50%;
+  border: 5px solid #CC5500;
+  transform-origin: 50% 90%;
+  display: block;
+}
+
+/* 마스코트 애니메이션 모드 */
+.mascot-img.mode-dance  { animation: dance 2s ease-in-out infinite; }
+.mascot-img.mode-happy  {
+  animation: happyShake 0.15s ease-in-out infinite;
+  border-color: #FF9900;
+  box-shadow: 0 0 20px 6px #FFD700;
+}
+.mascot-img.mode-angry  {
+  animation: angryShake 0.18s ease-in-out infinite;
+  border-color: #CC2200;
+  filter: brightness(1.05) saturate(1.4);
+}
+.mascot-img.mode-rage   {
+  animation: rageShake 0.09s ease-in-out infinite;
+  border-color: #FF0000;
+  filter: brightness(1.1) saturate(2) hue-rotate(-10deg);
+  box-shadow: 0 0 18px 4px #FF0000;
+}
+.mascot-img.mode-bald   {
+  animation: none;
+  border-color: #660000;
+  filter: brightness(0.75) saturate(0.7);
+}
+.mascot-img.mode-static { animation: none; }
+
+/* 해피 모드 배너 */
+.happy-banner {
+  display: none;
+  background: linear-gradient(135deg, #FF9900, #FFD700);
+  color: #5A2E00; font-size: 16px; font-weight: 900;
+  padding: 7px 18px; border-radius: 999px;
+  border: 3px solid #CC8800;
+  margin-top: 4px;
+  animation: bannerPulse 0.75s ease-in-out infinite alternate;
+  text-align: center;
+  white-space: nowrap;
+}
+.happy-banner.show { display: block; }
+
+.mascot-msg {
+  font-size: 17px; font-weight: 700; color: #4F9D6E;
+  text-align: center; min-height: 24px; margin-top: 5px;
+}
+.mascot-msg.angry-text { color: #CC1100; }
+.mascot-msg.happy-text { color: #BB7700; }
+
+.streak-row {
+  display: flex; align-items: center; gap: 5px;
+  font-size: 16px; font-weight: 700; color: #C2780E;
+  margin-top: 2px; visibility: hidden;
+}
+.streak-row.show { visibility: visible; }
+
+/* ===== 질문 카드 ===== */
+.question-card {
+  background: #FFFFFF; border: 4px solid #2E2A22;
+  border-radius: 22px; padding: 20px 18px;
+  text-align: center; margin-bottom: 14px;
+  flex-shrink: 0;
+}
+.question-num { font-size: 13px; color: #AAA090; font-weight: 600; margin-bottom: 4px; }
+.question-label { font-size: 16px; color: #8A7F66; font-weight: 700; margin-bottom: 8px; }
+.question-text { font-size: 24px; font-weight: 800; line-height: 1.55; }
+
+/* ===== 보기 버튼 ===== */
+.options {
+  display: grid; grid-template-columns: 1fr 1fr;
+  gap: 12px; margin-bottom: 12px;
+}
+.opt-btn {
+  font-size: 21px; font-weight: 800;
+  padding: 20px 8px; border-radius: 18px;
+  border: 4px solid; cursor: pointer;
+  background: #FFFFFF;
+  transition: transform 0.1s, background 0.15s;
+  line-height: 1.3;
+}
+.opt-btn:active { transform: scale(0.95); }
+.opt-taeyang { border-color: #D85A30; color: #993C1D; }
+.opt-taeeum  { border-color: #185FA5; color: #0C447C; }
+.opt-soyang  { border-color: #BA7517; color: #854F0B; }
+.opt-soeum   { border-color: #534AB7; color: #3C3489; }
+.opt-btn.correct { background: #4F9D6E !important; border-color: #2F6B45 !important; color: #FFF !important; }
+.opt-btn.wrong   { background: #D85447 !important; border-color: #9C342A !important; color: #FFF !important; }
+.opt-btn.dim     { opacity: 0.38; }
+.opt-btn:disabled { cursor: default; }
+
+/* ===== 피드백 / 다음 버튼 ===== */
+.feedback-box {
+  display: none; border-radius: 16px;
+  padding: 12px 14px; font-size: 17px; font-weight: 700;
+  text-align: center; margin-bottom: 10px; line-height: 1.55;
+  flex-shrink: 0;
+}
+.feedback-box.show { display: block; }
+.feedback-box.ok { background: #E2F2E7; color: #2F6B45; border: 3px solid #4F9D6E; }
+.feedback-box.no { background: #FBE6E3; color: #9C342A; border: 3px solid #D85447; }
+.next-btn {
+  display: none; width: 100%;
+  font-size: 22px; font-weight: 900;
+  padding: 16px; border-radius: 18px;
+  border: none; background: #4F9D6E; color: #FFF;
+  cursor: pointer; margin-top: 2px; flex-shrink: 0;
+  transition: transform 0.1s;
+}
+.next-btn:active { transform: scale(0.98); }
+.next-btn.show { display: block; }
+
+/* ===== 게임 오버 화면 ===== */
+.go-photo {
+  width: 150px; height: 150px; object-fit: cover;
+  border-radius: 50%; border: 6px solid #660000;
+  animation: rageShake 0.12s ease-in-out infinite;
+  box-shadow: 0 0 30px rgba(200,0,0,0.4);
+}
+.go-title { font-size: 32px; font-weight: 900; color: #770000; line-height: 1.3; }
+.go-quote {
+  font-size: 18px; font-weight: 800; color: #CC1100;
+  background: #FFF0EE; border: 3px solid #CC1100;
+  border-radius: 16px; padding: 12px 18px;
+  max-width: 360px; line-height: 1.6; text-align: center;
+}
+
+/* ===== 승리 화면 ===== */
+.vic-photo {
+  width: 150px; height: 150px; object-fit: cover;
+  border-radius: 50%; border: 6px solid #4F9D6E;
+  animation: dance 2s ease-in-out infinite;
+  transform-origin: 50% 90%;
+  box-shadow: 0 0 24px rgba(79,157,110,0.4);
+}
+.vic-title { font-size: 32px; font-weight: 900; color: #2F6B45; }
+.vic-quote {
+  font-size: 18px; font-weight: 800; color: #2F6B45;
+  background: #E2F2E7; border: 3px solid #4F9D6E;
+  border-radius: 16px; padding: 12px 18px;
+  max-width: 360px; line-height: 1.6; text-align: center;
+}
+
+/* ===== 통계 박스 ===== */
+.stats-box {
+  background: #FFF8EE; border: 3px solid #D8A070;
+  border-radius: 16px; padding: 14px 18px;
+  width: 100%; max-width: 340px; text-align: left;
+}
+.stat-row {
+  display: flex; justify-content: space-between;
+  padding: 5px 0; border-bottom: 1px solid #E8D4B8;
+  font-size: 16px;
+}
+.stat-row:last-child { border-bottom: none; }
+.s-lbl { color: #7A5A30; }
+.s-val { font-weight: 900; color: #3A2010; }
+
+/* ===== 공포 오버레이 (5연속 오답) ===== */
+#scary-overlay {
+  display: none; position: fixed; inset: 0;
+  background: #000; z-index: 9999;
+  align-items: center; justify-content: center;
+  flex-direction: column; overflow: hidden;
+}
+#scary-overlay.show { display: flex; }
+.scary-bg-img {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+  object-fit: cover;
+  object-position: center 12%;
+  transform-origin: center 18%;
+  animation: scaryZoom 1.4s cubic-bezier(0.05, 0, 0.2, 1) forwards;
+  transform: scale(0.08);
+  opacity: 0;
+}
+.scary-overlay-dark {
+  position: absolute; inset: 0;
+  background: rgba(0,0,0,0.45);
+  z-index: 1;
+  box-shadow: inset 0 0 200px rgba(200,0,0,0.7);
+  animation: vignetteFlash 0.25s 1.0s ease-in-out 6 alternate;
+}
+@keyframes vignetteFlash {
+  from { box-shadow: inset 0 0 150px rgba(180,0,0,0.5); }
+  to   { box-shadow: inset 0 0 300px rgba(255,0,0,0.9); }
+}
+.scary-text-wrap {
+  position: relative; z-index: 2;
+  display: flex; flex-direction: column;
+  align-items: center; gap: 16px;
+  padding: 20px;
+  text-align: center;
+}
+.scary-text {
+  color: #FF1100;
+  font-size: clamp(30px, 8vw, 66px);
+  font-weight: 900; line-height: 1.3;
+  text-shadow: 0 0 20px #FF0000, 0 0 60px #AA0000, 0 0 100px #660000;
+  letter-spacing: 2px;
+  opacity: 0;
+  animation: textPop 0.25s 0.65s cubic-bezier(0.1, 2, 0.3, 1) forwards,
+             scaryTextShake 0.1s 1.0s ease-in-out 8;
+}
+.scary-sub {
+  color: #FF7766; font-size: 20px; font-weight: 800;
+  opacity: 0;
+  animation: textPop 0.3s 1.5s ease forwards;
+  text-shadow: 0 0 10px #FF4444;
+}
+.scary-restart-btn {
+  padding: 14px 32px; background: #CC0000;
+  color: #FFF; border: 3px solid #FF5544;
+  border-radius: 14px; font-size: 20px; font-weight: 800;
+  cursor: pointer; opacity: 0;
+  animation: textPop 0.3s 2.4s ease forwards;
+  margin-top: 8px;
+  box-shadow: 0 0 20px rgba(255,0,0,0.5);
+}
+.scary-restart-btn:active { transform: scale(0.97); }
+
+/* ===== 키프레임 ===== */
+@keyframes dance {
+  0%   { transform: rotate(-7deg) translateY(0px); }
+  25%  { transform: rotate(0deg)  translateY(-9px); }
+  50%  { transform: rotate(7deg)  translateY(0px); }
+  75%  { transform: rotate(0deg)  translateY(-9px); }
+  100% { transform: rotate(-7deg) translateY(0px); }
+}
+@keyframes happyShake {
+  0%   { transform: translateX(-16px) rotate(-4deg); }
+  50%  { transform: translateX(16px)  rotate(4deg); }
+  100% { transform: translateX(-16px) rotate(-4deg); }
+}
+@keyframes angryShake {
+  0%   { transform: translateX(-7px) rotate(-2deg); }
+  50%  { transform: translateX(7px)  rotate(2deg); }
+  100% { transform: translateX(-7px) rotate(-2deg); }
+}
+@keyframes rageShake {
+  0%   { transform: translateX(-13px) rotate(-6deg); }
+  20%  { transform: translateX(13px)  rotate(6deg); }
+  40%  { transform: translateX(-10px) rotate(-4deg); }
+  60%  { transform: translateX(10px)  rotate(4deg); }
+  80%  { transform: translateX(-13px) rotate(-6deg); }
+  100% { transform: translateX(13px)  rotate(6deg); }
+}
+@keyframes heartBreak {
+  0%   { transform: scale(1.5); }
+  40%  { transform: scale(0.5) rotate(-25deg); opacity: 0.6; }
+  100% { transform: scale(0.65); opacity: 0.18; }
+}
+@keyframes scaryZoom {
+  0%   { transform: scale(0.08); opacity: 0; }
+  8%   { opacity: 1; }
+  60%  { transform: scale(1.6); }
+  100% { transform: scale(3.2); opacity: 1; }
+}
+@keyframes scaryTextShake {
+  0%,100% { transform: translateX(0) scale(1); }
+  15% { transform: translateX(-14px) scale(1.06); }
+  35% { transform: translateX(14px) scale(0.97); }
+  55% { transform: translateX(-10px) scale(1.04); }
+  75% { transform: translateX(10px) scale(1); }
+}
+@keyframes textPop {
+  from { opacity: 0; transform: scale(0.4); }
+  to   { opacity: 1; transform: scale(1); }
+}
+@keyframes bannerPulse {
+  from { box-shadow: 0 0 8px #FFD700;  transform: scale(1); }
+  to   { box-shadow: 0 0 22px #FFD700; transform: scale(1.03); }
+}
+@keyframes pillPulse {
+  from { box-shadow: none; }
+  to   { box-shadow: 0 0 12px #FFB800; }
+}
+@keyframes screenFlash {
+  0%, 100% { background: #FBF3E4; }
+  30%  { background: #FFD0C0; }
+  60%  { background: #FF9070; }
+}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- ===== 타이틀 화면 ===== -->
+  <div class="screen show" id="screen-start">
+    <img src="../자료/홍영주 할머니.jpg" class="title-photo" alt="홍영주">
+    <h1 class="title-main">홍영주 할머니의<br>체질 맞추기 퀴즈!</h1>
+    <p class="title-sub">사상체질 문제를 풀어보세요.<br>틀리면 홍영주 할머니가 <b>화냅니다!!</b></p>
+    <div class="legend">
+      <span style="border-color:#D85A30;color:#993C1D;">태양인</span>
+      <span style="border-color:#185FA5;color:#0C447C;">태음인</span>
+      <span style="border-color:#BA7517;color:#854F0B;">소양인</span>
+      <span style="border-color:#534AB7;color:#3C3489;">소음인</span>
+    </div>
+    <div class="rules-box">
+      ❤️ 목숨 5개 — 틀릴 때마다 1개씩 깎여요!<br>
+      💀 목숨 소진 → 삭발 홍영주 등장 + 분노 폭발<br>
+      🔥 3연속 정답 → 해피 홍영주 모드! 점수 2배!<br>
+      😱 3연속 오답 → 강제 게임 종료!!
+    </div>
+    <button class="big-btn" onclick="startGame()">▶ 퀴즈 시작!</button>
+  </div>
+
+  <!-- ===== 퀴즈 화면 ===== -->
+  <div class="quiz-screen" id="screen-quiz">
+
+    <!-- HUD -->
+    <div class="topbar">
+      <div class="lives-display" id="livesDisplay"></div>
+      <div class="progress-track"><div class="progress-fill" id="progressFill"></div></div>
+      <div class="score-pill" id="scorePill">0점</div>
+    </div>
+
+    <!-- 마스코트 -->
+    <div class="mascot-zone">
+      <div class="talk-bubble" id="talkBubble">어떤 체질일까요?</div>
+      <div class="mascot-wrap">
+        <img src="../자료/홍영주 할머니.jpg" class="mascot-img mode-dance" id="mascotImg" alt="홍영주">
+      </div>
+      <div class="happy-banner" id="happyBanner">⭐ 해피 홍영주 모드! 점수 2배! ⭐</div>
+      <p class="mascot-msg" id="mascotMsg">어떤 체질일까요?</p>
+      <div class="streak-row" id="streakRow">
+        <span>🔥</span><span id="streakNum">0</span><span>연속 정답!</span>
+      </div>
+    </div>
+
+    <!-- 질문 카드 -->
+    <div class="question-card">
+      <p class="question-num" id="questionNum">문제 1 / 20</p>
+      <p class="question-label">이런 특징을 가진 체질은?</p>
+      <p class="question-text" id="questionText">질문 내용</p>
+    </div>
+
+    <!-- 보기 -->
+    <div class="options" id="optionsGrid"></div>
+
+    <!-- 피드백 -->
+    <div class="feedback-box" id="feedbackBox"></div>
+    <button class="next-btn" id="nextBtn" onclick="nextQuestion()">다음 문제</button>
+  </div>
+
+  <!-- ===== 게임 오버 화면 ===== -->
+  <div class="screen" id="screen-gameover">
+    <img src="../자료/삭발홍영주.png" class="go-photo" id="goPhoto" alt="삭발 홍영주">
+    <h2 class="go-title">💀 게임 오버 💀</h2>
+    <div class="go-quote" id="goQuote">"내 머리카락을 돌려내라!!"</div>
+    <div class="stats-box" id="goStats"></div>
+    <button class="big-btn" onclick="restartGame()">↺ 다시 도전!</button>
+  </div>
+
+  <!-- ===== 완주 화면 ===== -->
+  <div class="screen" id="screen-victory">
+    <img src="../자료/당근마스터 홍영주.png" class="vic-photo" alt="행복한 홍영주" onerror="this.src='../자료/홍영주 할머니.jpg'">
+    <h2 class="vic-title">🏆 완주 성공! 🏆</h2>
+    <div class="vic-quote" id="vicQuote">"허허! 역시 내 제자야! 잘했어!"</div>
+    <div class="stats-box" id="vicStats"></div>
+    <button class="big-btn" style="background:#3A8A55;" onclick="restartGame()">↺ 다시 도전!</button>
+  </div>
+
+</div>
+
+<!-- ===== 공포 오버레이 (3연속 오답) ===== -->
+<div id="scary-overlay">
+  <img src="../자료/삭발홍영주.png" class="scary-bg-img" alt="">
+  <div class="scary-overlay-dark"></div>
+  <div class="scary-text-wrap">
+    <div class="scary-text">뭐하는거야?<br>지금!!!!!!!!</div>
+    <div class="scary-sub">게임 강제 종료!!</div>
+    <button class="scary-restart-btn" onclick="scaryRestart()">↺ 다시 시작하기</button>
+  </div>
+</div>
+
+<script>
+/* =================== 퀴즈 데이터 =================== */
+var TYPES = {
+  taeyang: { name: "태양인", cls: "opt-taeyang" },
+  taeeum:  { name: "태음인", cls: "opt-taeeum"  },
+  soyang:  { name: "소양인", cls: "opt-soyang"  },
+  soeum:   { name: "소음인", cls: "opt-soeum"   }
+};
+
+var QUESTIONS = [
+  { q: "행동이 활발하고 명랑하며, 더위를 잘 타요.", a: "soyang", note: "소양인은 비위 기능이 강하고 활동적이에요." },
+  { q: "몸이 듬직하고 차분하며, 인내심이 강해요.", a: "taeeum", note: "태음인은 체격이 크고 끈기가 많은 편이에요." },
+  { q: "성격이 적극적이고 진취적이며, 추진력이 강해요.", a: "taeyang", note: "태양인은 기상이 굳세고 앞으로 나아가는 힘이 강해요." },
+  { q: "성격이 차분하고 꼼꼼하며, 추위를 잘 타요.", a: "soeum", note: "소음인은 소화기관이 약하고 몸이 찬 편이에요." },
+  { q: "간 기능은 강하지만 폐 기능이 약한 편이에요.", a: "taeeum", note: "태음인은 간이 크고 폐가 작다고 알려져 있어요." },
+  { q: "신장 기능은 강하지만 비위 기능이 약한 편이에요.", a: "soeum", note: "소음인은 신장이 크고 비위가 작은 체질이에요." },
+  { q: "비위 기능은 강하지만 신장 기능이 약한 편이에요.", a: "soyang", note: "소양인은 비위가 크고 신장이 작은 체질이에요." },
+  { q: "폐 기능은 강하지만 간 기능이 약한 편이에요.", a: "taeyang", note: "태양인은 폐가 크고 간이 작은, 가장 드문 체질이에요." },
+  { q: "체격이 크고 살이 잘 찌는 편이에요.", a: "taeeum", note: "태음인은 골격이 굵고 체중이 잘 느는 편이에요." },
+  { q: "행동이 빠르고 일을 시원시원하게 처리해요.", a: "soyang", note: "소양인은 판단과 행동이 빠른 편이에요." },
+  { q: "소화기관이 약해서 음식을 가려 먹는 편이에요.", a: "soeum", note: "소음인은 위장이 예민해서 식사에 신경을 써야 해요." },
+  { q: "네 체질 중 인구가 가장 적은, 드문 체질이에요.", a: "taeyang", note: "태양인은 사상체질 중 가장 드물게 나타나는 체질이에요." },
+  { q: "느긋하고 변화를 싫어하며, 한 번 시작한 일은 끝까지 해요.", a: "taeeum", note: "태음인은 진득하고 안정적인 성향이 강해요." },
+  { q: "감정 기복이 적고 매사에 신중하며 잘 흥분하지 않아요.", a: "soeum", note: "소음인은 내성적이고 침착한 편이에요." },
+  { q: "사교적이고 사람들과 어울리기를 좋아해요.", a: "soyang", note: "소양인은 외향적이고 사람 만나는 걸 즐기는 편이에요." },
+  { q: "머리가 크고 목덜미·어깨가 발달했으며, 하체가 약한 편이에요.", a: "taeyang", note: "태양인은 상체가 강하고 하체가 약한 체형이에요." },
+  { q: "가슴·흉곽이 발달하고 엉덩이가 작으며 다리가 가늘어요.", a: "soyang", note: "소양인은 상체가 강하고 하체가 약해요." },
+  { q: "체구가 작고 마르며, 엉덩이가 발달하고 손발이 차가워요.", a: "soeum", note: "소음인은 체구가 작고 추위를 잘 타는 편이에요." },
+  { q: "허리 부위가 발달하고 땀을 많이 흘리는 편이에요.", a: "taeeum", note: "태음인은 허리가 발달하고 땀을 흘려야 개운해요." },
+  { q: "화가 많고 다혈질이며, 말이 빠르고 직설적이에요.", a: "soyang", note: "소양인은 빠르고 직설적이며 다혈질인 편이에요." }
+];
+
+var PRAISE = [
+  "오호! 정확해요! 허허허!",
+  "맞아맞아! 내 눈에는 못 속여!",
+  "훌륭해! 홍영주가 인정함!",
+  "역시! 내가 가르칠 게 없겠네!",
+  "완벽해요! 체질 천재인가봐!",
+  "허허! 잘 알고 있군요!",
+  "오! 정답! 역시 달라!"
+];
+
+var ANGRY = [
+  "아이고!! 틀렸잖아요! 공부 좀 해요!",
+  "에이! 그게 뭐야! 아우 속터져!",
+  "이런!! 완전 틀렸어! 화난다 진짜!!",
+  "뭐야 이게?! 틀렸잖아!! 목숨 하나 깎아!",
+  "어떻게 그게 틀려?! 정신 차려요!!"
+];
+
+var GO_QUOTES = [
+  '"내 머리카락을 돌려내라!!"',
+  '"이 억울함을... 어떻게 풀어야 하나!!"',
+  '"내가 왜 이런 꼴을... 분하다 분해!!"'
+];
+
+var VIC_QUOTES = [
+  '"허허! 역시 내 제자야! 체질 마스터!"',
+  '"아이고! 잘하네! 내가 다 뿌듯하네요!"',
+  '"이 정도면 홍영주도 인정하지! 최고야!"'
+];
+
+/* =================== 게임 상태 =================== */
+var lives = 5;
+var score = 0;
+var streak = 0;
+var wrongStreak = 0;
+var bestStreak = 0;
+var happyMode = false;
+var totalCorrect = 0;
+var totalWrong = 0;
+var currentIndex = 0;
+var answered = false;
+var gameQuestions = [];
+var bubbleTimer = null;
+var pendingEnd = null;
+
+/* =================== 유틸 =================== */
+function shuffle(arr) {
+  var a = arr.slice();
+  for (var i = a.length - 1; i > 0; i--) {
+    var j = Math.floor(Math.random() * (i + 1));
+    var t = a[i]; a[i] = a[j]; a[j] = t;
+  }
+  return a;
+}
+
+function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+
+function buildOptions(correctKey) {
+  var others = Object.keys(TYPES).filter(function(k){ return k !== correctKey; });
+  return shuffle([correctKey].concat(shuffle(others).slice(0, 3)));
+}
+
+/* =================== UI 헬퍼 =================== */
+function renderLives() {
+  var d = document.getElementById("livesDisplay");
+  d.innerHTML = "";
+  for (var i = 0; i < 5; i++) {
+    var span = document.createElement("span");
+    span.className = "heart" + (i >= lives ? " lost" : "");
+    span.textContent = (i >= lives) ? "🖤" : "❤️";
+    span.id = "heart-" + i;
+    d.appendChild(span);
+  }
+}
+
+function loseLife() {
+  var idx = lives - 1;
+  lives--;
+  var heartEl = document.getElementById("heart-" + idx);
+  if (heartEl) {
+    heartEl.classList.add("breaking");
+    setTimeout(function(){
+      heartEl.textContent = "🖤";
+      heartEl.classList.remove("breaking");
+      heartEl.classList.add("lost");
+    }, 450);
+  }
+}
+
+function showBubble(text, type) {
+  var b = document.getElementById("talkBubble");
+  if (bubbleTimer) clearTimeout(bubbleTimer);
+  b.textContent = text;
+  b.className = "talk-bubble show" + (type ? " " + type + "-bubble" : "");
+  bubbleTimer = setTimeout(function(){ b.classList.remove("show"); }, 2800);
+}
+
+function setMascot(mode) {
+  var img = document.getElementById("mascotImg");
+  img.className = "mascot-img mode-" + mode;
+  if (mode === "bald") {
+    img.src = "../자료/삭발홍영주.png";
+  } else if (mode === "happy") {
+    img.src = "../자료/당근마스터 홍영주.png";
+  } else {
+    img.src = "../자료/홍영주 할머니.jpg";
+  }
+}
+
+function setMsg(text, type) {
+  var el = document.getElementById("mascotMsg");
+  el.textContent = text;
+  el.className = "mascot-msg" + (type ? " " + type + "-text" : "");
+}
+
+function updateScore() {
+  var pill = document.getElementById("scorePill");
+  pill.textContent = score + "점" + (happyMode ? " ×2⭐" : "");
+  pill.className = "score-pill" + (happyMode ? " happy-pill" : "");
+}
+
+/* =================== 게임 시작 =================== */
+function startGame() {
+  lives = 5; score = 0;
+  streak = 0; wrongStreak = 0; bestStreak = 0;
+  happyMode = false;
+  totalCorrect = 0; totalWrong = 0;
+  currentIndex = 0;
+
+  gameQuestions = shuffle(QUESTIONS);
+
+  document.getElementById("screen-start").classList.remove("show");
+  document.getElementById("screen-gameover").classList.remove("show");
+  document.getElementById("screen-victory").classList.remove("show");
+  document.getElementById("screen-quiz").classList.add("show");
+
+  renderLives();
+  updateScore();
+  setMascot("dance");
+  setMsg("어떤 체질일까요?");
+  document.getElementById("streakRow").classList.remove("show");
+  document.getElementById("happyBanner").classList.remove("show");
+  document.getElementById("talkBubble").className = "talk-bubble";
+
+  loadQuestion();
+}
+
+function restartGame() {
+  document.getElementById("screen-gameover").classList.remove("show");
+  document.getElementById("screen-victory").classList.remove("show");
+  document.getElementById("screen-start").classList.add("show");
+}
+
+/* =================== 문제 로드 =================== */
+function loadQuestion() {
+  answered = false;
+  var item = gameQuestions[currentIndex];
+  var total = gameQuestions.length;
+
+  document.getElementById("progressFill").style.width = (currentIndex / total * 100) + "%";
+  document.getElementById("questionNum").textContent = "문제 " + (currentIndex + 1) + " / " + total;
+  document.getElementById("questionText").textContent = item.q;
+  document.getElementById("feedbackBox").className = "feedback-box";
+  var nb = document.getElementById("nextBtn");
+  nb.style.display = "";
+  nb.classList.remove("show");
+
+  if (happyMode) {
+    setMascot("happy");
+    setMsg("해피 모드! 맞춰봐요! ⭐", "happy");
+    showBubble("점수 2배 모드 중이야!!", "happy");
+  } else {
+    setMascot("dance");
+    setMsg("어떤 체질일까요?");
+    document.getElementById("talkBubble").className = "talk-bubble";
+  }
+
+  var optKeys = buildOptions(item.a);
+  var grid = document.getElementById("optionsGrid");
+  grid.innerHTML = "";
+  optKeys.forEach(function(key) {
+    var btn = document.createElement("button");
+    btn.className = "opt-btn " + TYPES[key].cls;
+    btn.textContent = TYPES[key].name;
+    btn.onclick = (function(k, b, g){ return function(){ selectAnswer(k, item, b, g); }; })(key, btn, grid);
+    grid.appendChild(btn);
+  });
+}
+
+/* =================== 답 선택 =================== */
+function selectAnswer(key, item, btn, grid) {
+  if (answered) return;
+  answered = true;
+
+  var allBtns = grid.querySelectorAll(".opt-btn");
+  var isCorrect = key === item.a;
+
+  allBtns.forEach(function(b) {
+    b.disabled = true;
+    var bKey = null;
+    Object.keys(TYPES).forEach(function(k){ if (b.textContent === TYPES[k].name) bKey = k; });
+    if (bKey === item.a) b.classList.add("correct");
+    else if (b === btn && !isCorrect) b.classList.add("wrong");
+    else b.classList.add("dim");
+  });
+
+  var fb = document.getElementById("feedbackBox");
+
+  if (isCorrect) {
+    /* ── 정답 처리 ── */
+    streak++;
+    wrongStreak = 0;
+    totalCorrect++;
+    bestStreak = Math.max(bestStreak, streak);
+
+    var pts = happyMode ? 20 : 10;
+    score += pts;
+
+    var praiseText = pick(PRAISE);
+
+    if (!happyMode && streak >= 3) {
+      /* 해피 홍영주 모드 돌입! */
+      happyMode = true;
+      setMascot("happy");
+      setMsg("해피 홍영주 모드 돌입!! ⭐", "happy");
+      showBubble("3연속 정답!! 이제 점수 2배야!!", "happy");
+      document.getElementById("happyBanner").classList.add("show");
+      fb.className = "feedback-box show ok";
+      fb.innerHTML = "🌟 정답! (+20점) " + item.note + "<br><b>🔥 해피 홍영주 모드 발동! 점수 2배!!</b>";
+    } else if (happyMode) {
+      setMascot("happy");
+      setMsg(praiseText, "happy");
+      showBubble(praiseText, "happy");
+      fb.className = "feedback-box show ok";
+      fb.innerHTML = "⭐ 정답! (+20점) " + item.note;
+    } else {
+      setMascot("dance");
+      setMsg(praiseText);
+      showBubble(praiseText, "happy");
+      fb.className = "feedback-box show ok";
+      fb.innerHTML = "✅ 정답! (+10점) " + item.note;
+    }
+
+    if (streak > 0) {
+      document.getElementById("streakRow").classList.add("show");
+      document.getElementById("streakNum").textContent = streak;
+    }
+
+  } else {
+    /* ── 오답 처리 ── */
+    streak = 0;
+    wrongStreak++;
+    totalWrong++;
+
+    if (happyMode) {
+      happyMode = false;
+      document.getElementById("happyBanner").classList.remove("show");
+    }
+    document.getElementById("streakRow").classList.remove("show");
+
+    loseLife();
+
+    var angryText = pick(ANGRY);
+    fb.className = "feedback-box show no";
+    fb.innerHTML = "❌ 정답은 <b>" + TYPES[item.a].name + "</b>이에요. " + item.note;
+
+    /* 3연속 오답 → 공포 모드 (우선 처리) */
+    if (wrongStreak >= 3) {
+      setMascot("rage");
+      setMsg("뭐... 하는거야...?!", "angry");
+      showBubble("3연속 오답!!! 참을 수가 없다!!", "angry");
+      document.getElementById("nextBtn").style.display = "none";
+      updateScore();
+      setTimeout(function(){ triggerScaryMode(); }, 1500);
+      return;
+    }
+
+    /* 목숨 소진 → 게임 오버 */
+    if (lives <= 0) {
+      setMascot("bald");
+      setMsg("내 머리카락...!!", "angry");
+      showBubble("내 머리카락을 돌려내라!!", "angry");
+      updateScore();
+      document.getElementById("nextBtn").style.display = "none";
+      setTimeout(function(){ showGameOver(); }, 2200);
+      return;
+    }
+
+    /* 목숨 얼마 안 남음 */
+    if (lives <= 2) {
+      setMascot("rage");
+    } else {
+      setMascot("angry");
+    }
+    setMsg(angryText, "angry");
+    showBubble(angryText, "angry");
+  }
+
+  updateScore();
+  var nextBtn = document.getElementById("nextBtn");
+  nextBtn.style.display = "";
+  nextBtn.classList.add("show");
+  nextBtn.textContent = (currentIndex >= gameQuestions.length - 1) ? "결과 보기" : "다음 문제";
+}
+
+/* =================== 다음 문제 =================== */
+function nextQuestion() {
+  currentIndex++;
+  if (currentIndex >= gameQuestions.length) {
+    showVictory();
+    return;
+  }
+  loadQuestion();
+}
+
+/* =================== 공포 오버레이 =================== */
+function triggerScaryMode() {
+  /* 화면 번쩍임 */
+  document.body.style.animation = "screenFlash 0.12s 3";
+  setTimeout(function(){ document.body.style.animation = ""; }, 400);
+
+  var overlay = document.getElementById("scary-overlay");
+  overlay.style.display = "flex";
+}
+
+function scaryRestart() {
+  document.getElementById("scary-overlay").style.display = "none";
+  document.getElementById("screen-quiz").classList.remove("show");
+  showGameOver();
+}
+
+/* =================== 종료 화면 =================== */
+function buildStats(won) {
+  var total = gameQuestions.length;
+  var rating;
+  var ratio = totalCorrect / (currentIndex || 1);
+  if (ratio >= 0.9) rating = "⭐⭐⭐ 체질 마스터!";
+  else if (ratio >= 0.7) rating = "⭐⭐ 훌륭해요!";
+  else if (ratio >= 0.5) rating = "⭐ 잘 했어요!";
+  else rating = "더 공부해요...";
+  return [
+    '<div class="stat-row"><span class="s-lbl">최종 점수</span><span class="s-val">' + score + '점</span></div>',
+    '<div class="stat-row"><span class="s-lbl">정답 / 오답</span><span class="s-val">' + totalCorrect + ' / ' + totalWrong + '</span></div>',
+    '<div class="stat-row"><span class="s-lbl">최고 연속 정답</span><span class="s-val">' + bestStreak + '개</span></div>',
+    '<div class="stat-row"><span class="s-lbl">풀은 문제</span><span class="s-val">' + (currentIndex + (won ? 0 : 1)) + ' / ' + total + '</span></div>',
+    '<div class="stat-row"><span class="s-lbl">남은 목숨</span><span class="s-val">' + Math.max(0, lives) + '개</span></div>',
+    '<div class="stat-row"><span class="s-lbl">평가</span><span class="s-val">' + rating + '</span></div>'
+  ].join("");
+}
+
+function showGameOver() {
+  document.getElementById("screen-quiz").classList.remove("show");
+  document.getElementById("goStats").innerHTML = buildStats(false);
+  document.getElementById("goQuote").textContent = pick(GO_QUOTES);
+  document.getElementById("screen-gameover").classList.add("show");
+}
+
+function showVictory() {
+  document.getElementById("screen-quiz").classList.remove("show");
+  document.getElementById("vicStats").innerHTML = buildStats(true);
+  var ratio = totalCorrect / gameQuestions.length;
+  var quote;
+  if (ratio >= 0.9) quote = '"체질의 왕이 탄생했다! 대단해!!"';
+  else if (ratio >= 0.7) quote = pick(VIC_QUOTES);
+  else quote = '"그래, 그래도 끝까지 했으니까... 칭찬해줄게."';
+  document.getElementById("vicQuote").textContent = quote;
+  document.getElementById("screen-victory").classList.add("show");
+}
+</script>
+</body>
+</html>
