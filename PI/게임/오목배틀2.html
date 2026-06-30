@@ -523,7 +523,7 @@ const CHARACTERS = {
     active: {
       label: "돌 저장 (턴 넘김)",
       canUse(game, player) {
-        return player.stock < 5 && !game.pendingStockRelease;
+        return player.stock < 5 && !game.stockReleaseMode;
       },
       use(game, player) {
         player.stock++;
@@ -697,6 +697,7 @@ function startGame(){
   game.blocked = Array.from({length: BOARD_SIZE}, () => Array(BOARD_SIZE).fill(0));
   game.gameOver = false;
   game.pendingStockRelease = false;
+  game.stockReleaseMode = false;
   game.pendingTargetMode = null;
   game.extraTurnQueue = 0;
 
@@ -860,19 +861,35 @@ function renderActionArea(i, p, card){
     area.appendChild(btn);
   }
 
-  // 봄: 저장된 돌 방출 안내
+  // 봄: 저장된 돌 방출
   if (p.charKey === 'bom' && p.stock > 0){
-    const info = document.createElement('div');
-    info.style.fontSize = '0.74rem';
-    info.style.color = '#9fd9a8';
-    info.textContent = `보드를 클릭하면 저장된 돌을 1개씩 방출합니다. (원하는 만큼 클릭 후 "방출 종료")`;
-    area.appendChild(info);
+    if (game.stockReleaseMode) {
+      const info = document.createElement('div');
+      info.style.fontSize = '0.74rem';
+      info.style.color = '#7ad8a8';
+      info.style.marginBottom = '6px';
+      info.textContent = `📤 방출 모드 ON — 보드를 클릭하면 저장된 돌이 놓입니다. (남은 저장: ${p.stock})`;
+      area.appendChild(info);
 
-    const endBtn = document.createElement('button');
-    endBtn.className = 'ability-btn';
-    endBtn.textContent = '이번 턴은 일반 배치로 진행';
-    endBtn.style.marginTop = '6px';
-    area.appendChild(endBtn);
+      const endBtn = document.createElement('button');
+      endBtn.className = 'ability-btn';
+      endBtn.textContent = '방출 종료 (턴 넘김)';
+      endBtn.style.marginTop = '4px';
+      endBtn.addEventListener('click', () => {
+        game.stockReleaseMode = false;
+        game.endTurn();
+      });
+      area.appendChild(endBtn);
+    } else {
+      const releaseBtn = document.createElement('button');
+      releaseBtn.className = 'ability-btn';
+      releaseBtn.textContent = `📤 저장된 돌 방출하기 (${p.stock}개)`;
+      releaseBtn.addEventListener('click', () => {
+        game.stockReleaseMode = true;
+        updateStatusTexts();
+      });
+      area.appendChild(releaseBtn);
+    }
   }
 
   // 무빙맨: 이동 모드 토글
@@ -930,19 +947,19 @@ function onCellClick(r, c){
 
   const current = game.players[game.currentIdx];
 
-  // 봄: 저장된 돌 방출
-  if (current.charKey === 'bom' && current.stock > 0){
+  // 봄: 저장된 돌 방출 (방출 모드가 ON일 때만)
+  if (current.charKey === 'bom' && current.stock > 0 && game.stockReleaseMode){
     if (game.board[r][c] || game.blocked[r][c] > 0) return;
     placeStoneRaw(r, c, current.color);
     current.stock--;
     game.log(`${current.name}이(가) 저장한 돌을 방출! (남은 저장: ${current.stock})`, 'sys');
     const win = checkWin(r, c, current.color);
-    applyAfterPlaceHooks(current, r, c);
+    applyGoCaptureIfAny(current, r, c);
     renderBoard();
     updateStatusTexts();
     if (win){ return announceWin(current); }
     if (current.stock === 0){
-      // 자동으로 턴 종료할지, 계속 더 낼지는 자유. 0개되면 턴 종료.
+      game.stockReleaseMode = false;
       game.endTurn();
     }
     return;
@@ -1125,6 +1142,7 @@ function endTurn(){
   }
   game.moveMode = false;
   game.bombMode = false;
+  game.stockReleaseMode = false;
   decrementBlocked();
   const next = game.players[game.currentIdx];
   if (next.def.onTurnStart) next.def.onTurnStart(game, next);
@@ -1167,8 +1185,7 @@ game.invertAllStones = function(){
 /* ---------------- 안수구: 바둑 따먹기 ---------------- */
 
 function applyGoCaptureIfAny(actingPlayer, r, c){
-  const hasGoRule = game.players.some(p => p.def.goCapture);
-  if (!hasGoRule) return;
+  if (!actingPlayer.def.goCapture) return;
 
   const opponentColor = game.board[r][c] === 'black' ? 'white' : 'black';
   // 방금 놓은 돌 주변의 상대 그룹들을 검사
