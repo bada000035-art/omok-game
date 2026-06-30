@@ -454,7 +454,7 @@
   <div class="modal-box" id="modal-box"></div>
 </div>
 
-<script src="/socket.io/socket.io.js"></script>
+<script src="https://cdn.socket.io/4.7.5/socket.io.min.js"></script>
 <script>
 /* =========================================================================
    비대칭 오목 게임 엔진
@@ -1515,6 +1515,9 @@ function hideModal(){
    멀티플레이어 (Socket.io)
    ========================================================================= */
 
+// Render 배포 후 아래 URL을 실제 서버 주소로 교체하세요
+const MP_SERVER_URL = 'RENDER_URL_HERE';
+
 let isMultiplayer = false;
 let myPlayerIdx = 0;       // 0 = 방 생성자(p1 슬롯), 1 = 입장자(p2 슬롯)
 let myGamePlayerIdx = -1;  // game.players[] 에서 내 인덱스
@@ -1573,7 +1576,7 @@ function resetSelectScreen() {
 /* -- 소켓 초기화 -- */
 function initMpSocket() {
   if (mpSocket) return;
-  mpSocket = io();
+  mpSocket = io(MP_SERVER_URL, { transports: ['websocket', 'polling'] });
 
   mpSocket.on('room-created', ({ code }) => {
     myPlayerIdx = 0;
