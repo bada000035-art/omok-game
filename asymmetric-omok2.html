@@ -1,0 +1,1739 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>비대칭 오목 - 캐릭터 배틀</title>
+<style>
+  :root{
+    --sky: #3ec8e8;
+    --sea: #0898b8;
+    --sand: #f5e8b8;
+    --panel: rgba(255,252,235,0.92);
+    --panel-border: #c8b060;
+    --ink: #1a3a5a;
+    --ink-dim: #5a88aa;
+    --teal: #0aa8c8;
+    --coral: #ff6040;
+    --sun: #f5c020;
+    --danger: #e85040;
+    --ok: #3ab870;
+    --radius: 12px;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    background: linear-gradient(180deg,
+      #2cb8e0 0%, #60ccee 18%, #a8e0f4 40%,
+      #d8f0e8 65%, #eef5d0 80%, #f5e8b8 100%);
+    background-attachment: fixed;
+    color: var(--ink);
+    font-family: 'Segoe UI', 'Pretendard', -apple-system, sans-serif;
+    min-height:100vh;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    padding:20px 12px 60px;
+  }
+  h1{
+    font-size: 1.6rem;
+    letter-spacing: 2px;
+    margin: 6px 0 2px;
+    background: linear-gradient(90deg, #e8a800, #fff8a0, #f5c020, #fff8a0, #e8a800);
+    -webkit-background-clip:text;
+    background-clip:text;
+    color:transparent;
+    filter: drop-shadow(0 2px 6px rgba(0,80,140,0.25));
+  }
+  .subtitle{ color:#4a80a8; font-size:0.85rem; margin-bottom:18px; }
+
+  .screen{ display:none; width:100%; max-width:980px; }
+  .screen.active{ display:block; }
+
+  /* 캐릭터 선택 */
+  .player-select-block{
+    background: var(--panel);
+    border:1.5px solid var(--panel-border);
+    border-radius: var(--radius);
+    padding:16px;
+    margin-bottom:16px;
+    box-shadow: 0 4px 20px rgba(0,100,160,0.10);
+    backdrop-filter: blur(6px);
+  }
+  .player-select-block h2{
+    margin:0 0 12px;
+    font-size:1.05rem;
+    color: var(--ink);
+    display:flex; align-items:center; gap:8px;
+  }
+  .turn-dot{ width:12px; height:12px; border-radius:50%; display:inline-block; border:1px solid #0003; }
+  .turn-dot.black{ background:#1c1c1c; }
+  .turn-dot.white{ background:#f5f5f5; border-color:#bbb; }
+
+  .char-grid{
+    display:grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap:10px;
+  }
+  .char-card{
+    background: rgba(255,252,220,0.80);
+    border:2px solid #c8d890;
+    border-radius: var(--radius);
+    padding:12px 10px;
+    cursor:pointer;
+    text-align:center;
+    transition: transform .15s, border-color .15s, background .15s, box-shadow .15s;
+    color: var(--ink);
+  }
+  .char-card:hover{ transform: translateY(-4px); border-color: var(--sun); box-shadow:0 8px 22px rgba(240,192,0,0.25); }
+  .char-card.selected{ border-color: var(--sun); background:rgba(255,245,160,0.95); box-shadow:0 0 16px rgba(245,192,32,0.45); }
+  .char-card .emoji{ font-size:2.1rem; display:block; margin-bottom:6px; }
+  .char-card .name{ font-weight:700; font-size:0.92rem; color:var(--ink); }
+  .char-card .tagline{ font-size:0.72rem; color:var(--ink-dim); margin-top:4px; line-height:1.3; }
+
+  .char-detail{
+    margin-top:12px;
+    background: rgba(180,228,248,0.35);
+    border:1px dashed #80c0d8;
+    border-radius: var(--radius);
+    padding:12px 14px;
+    font-size:0.85rem;
+    color: var(--ink-dim);
+    min-height: 46px;
+    line-height:1.5;
+  }
+  .char-detail b{ color: var(--ink); }
+
+  .start-btn-wrap{ display:flex; justify-content:center; margin-top:18px; }
+
+  button.primary{
+    background: linear-gradient(180deg, #3ad0f0, #0898b8);
+    color: #fff;
+    border:none;
+    font-weight:700;
+    font-size:1rem;
+    padding:12px 30px;
+    border-radius: 999px;
+    cursor:pointer;
+    letter-spacing:1px;
+    box-shadow:0 4px 0 #0070a0;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+  }
+  button.primary:disabled{
+    background: linear-gradient(180deg, #a8ccd8, #90b8c8);
+    color:#d0e8f0; box-shadow:none; cursor:not-allowed;
+  }
+  button.primary:active:not(:disabled){ transform: translateY(2px); box-shadow:0 2px 0 #0070a0; }
+
+  button.ghost{
+    background: rgba(255,252,220,0.70);
+    border:1.5px solid #80c0d8;
+    color: #2a6888;
+    padding:8px 16px;
+    border-radius: 999px;
+    cursor:pointer;
+    font-size:0.85rem;
+  }
+  button.ghost:hover{ border-color: var(--sun); color:var(--ink); background:rgba(255,248,180,0.85); }
+
+  /* 게임 화면 */
+  .game-layout{
+    display:flex;
+    gap:18px;
+    align-items:flex-start;
+    flex-wrap:wrap;
+    justify-content:center;
+  }
+  .side-panel{
+    width: 230px;
+    display:flex;
+    flex-direction:column;
+    gap:10px;
+  }
+  .player-card{
+    background: var(--panel);
+    border:1.5px solid var(--panel-border);
+    border-radius: var(--radius);
+    padding:12px;
+    box-shadow: 0 3px 14px rgba(0,100,160,0.09);
+    color: var(--ink);
+  }
+  .player-card.active{
+    border-color: var(--sun);
+    box-shadow: 0 0 18px rgba(245,192,32,0.40), 0 3px 14px rgba(0,100,160,0.09);
+  }
+  .player-card .pc-head{ display:flex; align-items:center; gap:8px; margin-bottom:6px; }
+  .player-card .pc-head .emoji{ font-size:1.6rem; }
+  .player-card .pc-head .pname{ font-weight:700; font-size:0.95rem; color:var(--ink); }
+  .player-card .pc-head .pcolor{ font-size:0.7rem; color:var(--ink-dim); }
+  .player-card .pc-ability{ font-size:0.76rem; color:var(--ink-dim); line-height:1.4; margin-bottom:8px; }
+  .player-card .pc-status{ font-size:0.76rem; color:var(--teal); min-height: 16px; font-weight:600; }
+
+  .ability-btn{
+    width:100%;
+    background: rgba(180,238,255,0.60);
+    border:1.5px solid var(--teal);
+    color: #0878a0;
+    padding:8px;
+    border-radius:8px;
+    cursor:pointer;
+    font-size:0.8rem;
+    font-weight:700;
+    margin-top:4px;
+  }
+  .ability-btn:disabled{
+    border-color:#b0ccd8; color:#90b0c0;
+    background: rgba(200,225,235,0.40); cursor:not-allowed;
+  }
+
+  /* 보드 — 밝은 대나무/모래 느낌 */
+  .board-wrap{
+    background: linear-gradient(160deg, #e8cc68, #c8a028);
+    padding:14px;
+    border-radius: 14px;
+    box-shadow: 0 12px 40px rgba(0,80,160,0.22), inset 0 0 0 4px rgba(200,160,30,0.35);
+  }
+  #board{
+    display:grid;
+    gap:0;
+    background: #dfc058;
+    border: 3px solid #7a5810;
+  }
+  .cell{
+    width:32px; height:32px;
+    position:relative;
+    display:flex; align-items:center; justify-content:center;
+    cursor:pointer;
+  }
+  .cell::before, .cell::after{
+    content:"";
+    position:absolute;
+    background: #7a5810;
+  }
+  .cell::before{ left:0; right:0; top:50%; height:1px; transform:translateY(-50%); }
+  .cell::after{ top:0; bottom:0; left:50%; width:1px; transform:translateX(-50%); }
+  .cell.edge-l::before{ left:50%; }
+  .cell.edge-r::before{ right:50%; }
+  .cell.edge-t::after{ top:50%; }
+  .cell.edge-b::after{ bottom:50%; }
+
+  .stone{
+    width:26px; height:26px;
+    border-radius:50%;
+    z-index:2;
+    box-shadow: 1px 3px 5px rgba(0,0,0,0.30);
+    pointer-events:none;
+  }
+  .stone.black{ background: radial-gradient(circle at 35% 30%, #3a4858, #080c14); }
+  .stone.white{ background: radial-gradient(circle at 35% 30%, #fffff8, #d8dcc8); }
+  .stone.fading{ opacity:0.35; }
+
+  .cell.blocked-mark{ z-index:2; font-size:14px; }
+  .cell.blocked-bg{ background: rgba(220,80,40,0.22); }
+
+  .cell.targetable{ background: rgba(245,192,32,0.40); }
+  .cell.targetable:hover{ background: rgba(245,192,32,0.70); }
+
+  .last-move{ outline:2.5px solid #0898b8; outline-offset:-2px; z-index:3; }
+
+  .log-panel{
+    width:230px;
+    background: var(--panel);
+    border:1.5px solid var(--panel-border);
+    border-radius: var(--radius);
+    padding:10px 12px;
+    font-size:0.76rem;
+    color: var(--ink-dim);
+    max-height: 420px;
+    overflow-y:auto;
+    box-shadow: 0 3px 14px rgba(0,100,160,0.09);
+  }
+  .log-panel .log-title{ color:var(--ink); font-weight:700; margin-bottom:6px; font-size:0.8rem; }
+  .log-line{ margin-bottom:4px; line-height:1.4; }
+  .log-line.sys{ color: #0888b8; font-weight:600; }
+  .log-line.dmg{ color: var(--danger); }
+
+  /* 모달 */
+  .modal-overlay{
+    position:fixed; inset:0;
+    background: rgba(0,80,140,0.38);
+    backdrop-filter: blur(5px);
+    display:none; align-items:center; justify-content:center; z-index:50;
+  }
+  .modal-overlay.active{ display:flex; }
+  .modal-box{
+    background: rgba(255,252,230,0.97);
+    border:2px solid var(--sun);
+    border-radius: var(--radius);
+    padding:24px 28px;
+    text-align:center;
+    max-width:360px;
+    box-shadow: 0 20px 60px rgba(0,80,160,0.28);
+    color: var(--ink);
+  }
+  .modal-box h2{ margin-top:0; font-size:1.3rem; color:var(--ink); }
+  .modal-box p{ color: var(--ink-dim); font-size:0.88rem; }
+  .modal-actions{ margin-top:16px; display:flex; gap:10px; justify-content:center; }
+
+  .top-bar{
+    width:100%; max-width:980px;
+    display:flex; justify-content:space-between; align-items:center;
+    margin-bottom:10px;
+  }
+
+  .dice-display{ font-size:3rem; margin: 10px 0; }
+
+  @media (max-width:700px){
+    .cell{ width:24px; height:24px; }
+    .stone{ width:19px; height:19px; }
+    .side-panel, .log-panel{ width:100%; max-width:380px; }
+    .game-layout{ flex-direction:column; align-items:center; }
+  }
+
+  /* 로비 */
+  .lobby-wrap{
+    max-width: 520px;
+    margin: 0 auto;
+    display:flex;
+    flex-direction:column;
+    gap:16px;
+  }
+  .lobby-card{
+    background: var(--panel);
+    border:1.5px solid var(--panel-border);
+    border-radius: var(--radius);
+    padding:24px 28px;
+    text-align:center;
+    box-shadow: 0 4px 20px rgba(0,120,180,0.12);
+    backdrop-filter: blur(6px);
+  }
+  .lobby-card h3{
+    margin:0 0 16px;
+    font-size:1rem;
+    color: var(--teal);
+    letter-spacing:1px;
+    font-weight:700;
+  }
+  .lobby-divider{
+    border:none;
+    border-top:1px solid #b8d8e8;
+    margin:14px 0;
+  }
+  .join-row{ display:flex; gap:8px; justify-content:center; align-items:center; }
+  .code-input{
+    background: rgba(190,235,255,0.40);
+    border:1.5px solid #80c0d8;
+    color: var(--ink);
+    padding:10px 14px;
+    border-radius:8px;
+    font-size:1.2rem;
+    width:110px;
+    text-align:center;
+    letter-spacing:4px;
+    text-transform:uppercase;
+    outline:none;
+  }
+  .code-input:focus{ border-color: var(--sun); box-shadow:0 0 0 3px rgba(245,192,32,0.25); }
+  .lobby-status{
+    margin-top:14px;
+    color:var(--ink-dim);
+    font-size:0.85rem;
+    min-height:36px;
+    line-height:1.6;
+  }
+  .lobby-or{
+    color:#4a88a8;
+    font-size:0.82rem;
+    text-align:center;
+    margin:4px 0;
+    letter-spacing:1px;
+  }
+  .mp-select-status{
+    text-align:center;
+    color: var(--teal);
+    font-size:0.82rem;
+    min-height:20px;
+    margin-top:6px;
+    font-weight:600;
+  }
+</style>
+</head>
+<body>
+
+<h1>비대칭 오목 — 캐릭터 배틀</h1>
+<div class="subtitle">캐릭터마다 다른 능력으로 펼치는 변칙 오목</div>
+
+<!-- ============ 로비 화면 ============ -->
+<div id="lobby-screen" class="screen active">
+  <div class="lobby-wrap">
+    <div class="lobby-card">
+      <h3>🌐 온라인 대전</h3>
+      <button id="create-room-btn" class="primary">방 만들기</button>
+      <hr class="lobby-divider">
+      <div class="join-row">
+        <input id="room-code-input" class="code-input" placeholder="XXXX" maxlength="4" />
+        <button id="join-room-btn" class="primary">입장</button>
+      </div>
+      <div id="lobby-status" class="lobby-status"></div>
+    </div>
+    <div class="lobby-or">— 또는 —</div>
+    <div class="lobby-card">
+      <h3>🏠 같은 화면 2인 플레이</h3>
+      <button id="local-play-btn" class="primary">로컬 플레이</button>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 캐릭터 선택 화면 ============ -->
+<div id="select-screen" class="screen">
+  <div class="player-select-block">
+    <h2><span class="turn-dot black"></span> 플레이어 1 캐릭터 선택</h2>
+    <div id="p1-grid" class="char-grid"></div>
+    <div id="p1-detail" class="char-detail">캐릭터를 선택하면 설명이 여기 표시됩니다.</div>
+  </div>
+
+  <div class="player-select-block">
+    <h2><span class="turn-dot white"></span> 플레이어 2 캐릭터 선택</h2>
+    <div id="p2-grid" class="char-grid"></div>
+    <div id="p2-detail" class="char-detail">캐릭터를 선택하면 설명이 여기 표시됩니다.</div>
+  </div>
+
+  <div class="start-btn-wrap">
+    <button id="start-btn" class="primary" disabled>게임 시작</button>
+  </div>
+  <div id="mp-select-status" class="mp-select-status"></div>
+</div>
+
+<!-- ============ 게임 화면 ============ -->
+<div id="game-screen" class="screen">
+  <div class="top-bar">
+    <button id="back-btn" class="ghost">← 캐릭터 다시 선택</button>
+    <button id="restart-btn" class="ghost">같은 캐릭터로 재시작</button>
+  </div>
+  <div class="game-layout">
+    <div class="side-panel">
+      <div id="p1-card" class="player-card">
+        <div class="pc-head">
+          <span class="emoji"></span>
+          <div>
+            <div class="pname"></div>
+            <div class="pcolor"></div>
+          </div>
+        </div>
+        <div class="pc-ability"></div>
+        <div class="pc-status"></div>
+        <div class="pc-action-area"></div>
+      </div>
+      <div id="p2-card" class="player-card">
+        <div class="pc-head">
+          <span class="emoji"></span>
+          <div>
+            <div class="pname"></div>
+            <div class="pcolor"></div>
+          </div>
+        </div>
+        <div class="pc-ability"></div>
+        <div class="pc-status"></div>
+        <div class="pc-action-area"></div>
+      </div>
+    </div>
+
+    <div class="board-wrap">
+      <div id="board"></div>
+    </div>
+
+    <div class="log-panel">
+      <div class="log-title">📜 진행 기록</div>
+      <div id="log-list"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ============ 모달들 ============ -->
+<div id="modal-overlay" class="modal-overlay">
+  <div class="modal-box" id="modal-box"></div>
+</div>
+
+<script src="/socket.io/socket.io.js"></script>
+<script>
+/* =========================================================================
+   비대칭 오목 게임 엔진
+   - 신규 캐릭터 추가는 CHARACTERS 객체에 항목만 추가하면 됨
+   - 각 캐릭터는 hooks(이벤트 훅)와 active(능동 발동 능력)를 가질 수 있음
+   ========================================================================= */
+
+const BOARD_SIZE = 15;
+const WIN_LENGTH_DEFAULT = 5;
+
+/* -------------------------------------------------------------------------
+   캐릭터 정의 영역
+   ----------------------------------------------------------------------
+   각 캐릭터 객체가 가질 수 있는 필드:
+   - name, emoji, tagline, story : 표시용 텍스트
+   - winLength : 승리에 필요한 연속 개수 (기본 5)
+   - setup(game, player) : 게임 시작 시 1회 호출 (선 배치 등)
+   - onBeforePlace(game, player, r, c) : 돌을 놓기 직전 호출. false 반환시 배치 취소 가능
+   - onAfterPlace(game, player, r, c) : 돌을 놓은 직후 호출 (추가효과, 부가효과 등)
+   - onTurnStart(game, player) : 자신의 턴이 시작할 때 호출
+   - active : { label, canUse(game,player), use(game,player) } 형태의 능동 스킬.
+              canUse가 true면 패널에 버튼이 뜨고 use가 실행됨.
+              버튼을 누르고 보드의 칸을 골라야 하는 능력은 game.requestTarget() 사용.
+   ------------------------------------------------------------------------- */
+const CHARACTERS = {
+
+  sinheukdol: {
+    name: "신흑돌",
+    emoji: "🖤",
+    tagline: "삭흑돌의 아들",
+    story: "순삭의 수를 두는 전설 삭흑돌의 아들. 무조건 흑으로 시작하며, 시작 전 돌 3개를 원하는 위치에 직접 배치한 뒤 상대에게 턴이 넘어간다.",
+    forceColor: "black",
+    setup(game, player) {
+      game.requestPreGamePlacement(player, 3);
+    }
+  },
+
+  gangbaekhan: {
+    name: "강백한",
+    emoji: "⬜",
+    tagline: "삭흑돌의 원수",
+    story: "삭흑돌의 원수. 보드 위 모든 돌의 흑/백 색을 단 한 번 완전히 반전시킬 수 있다.",
+    active: {
+      label: "흑백 반전 (1회)",
+      maxUses: 1,
+      canUse(game, player) {
+        return player.usesLeft.invert > 0;
+      },
+      use(game, player) {
+        game.invertAllStones();
+        player.usesLeft.invert--;
+        game.log(`${player.charKey ? '' : ''}${player.name}이(가) 흑백을 완전히 반전시켰다!`, 'sys');
+        game.endTurn();
+      }
+    },
+    initUses(player) { player.usesLeft.invert = 1; }
+  },
+
+  bom: {
+    name: "봄",
+    emoji: "🐶",
+    tagline: "개뼈다구를 좋아하는 말티즈",
+    story: "개뼈다구를 좋아하는 말티즈. 턴을 넘기며 자기 돌을 최대 5개까지 저장했다가, 자신의 턴에 원하는 만큼 한꺼번에 배치할 수 있다.",
+    maxStock: 5,
+    initUses(player) { player.stock = 0; },
+    active: {
+      label: "돌 저장 (턴 넘김)",
+      canUse(game, player) {
+        return player.stock < 5 && !game.pendingStockRelease;
+      },
+      use(game, player) {
+        player.stock++;
+        game.log(`${player.name}이(가) 돌을 저장했다. (현재 ${player.stock}/5) 턴을 넘긴다.`, 'sys');
+        game.endTurn();
+      }
+    },
+    // 저장된 돌 방출은 보드를 클릭할 때마다 1개씩 소모하는 방식으로 처리 (게임 로직에서 분기)
+  },
+
+  ansugu: {
+    name: "안수구",
+    emoji: "📰",
+    tagline: "신문활용학습으로 신분을 숨긴 바둑고수",
+    story: "베이징에서 신문활용학습을 하며 신분을 숨기고 있는 바둑 고수. 바둑의 따먹기 룰이 적용되어, 상대 돌 그룹이 완전히 포위되면 그 그룹 전체가 제거된다.",
+    goCapture: true, // 게임 로직에서 이 플래그를 보고 따먹기 처리
+  },
+
+  halilli: {
+    name: "도박마 할릴리",
+    emoji: "🎲",
+    tagline: "주사위로 오목을 두는 도박마",
+    story: "도박에 살고 도박에 죽는 사나이. 돌을 놓은 뒤 주사위를 굴릴지 선택할 수 있다. 1:상대 연속 2턴, 2:내돌 제거, 3:내돌 이동, 4:무효과, 5:상대돌 제거, 6:턴 재시작(무한 가능).",
+    diceAbility: true,
+  },
+
+  pupkipups: {
+    name: "풉키풉스",
+    emoji: "🤡",
+    tagline: "혼돈을 사랑하는 광대",
+    story: "혼돈을 사랑하는 광대. 자신이 돌을 놓을 때마다 무작위 색의 돌 하나가 무작위 빈 칸에 추가로 놓인다.",
+    chaosAbility: true,
+  },
+
+  movingman: {
+    name: "무빙맨",
+    emoji: "🏃",
+    tagline: "이동의 달인",
+    story: "매 턴 돌을 놓는 대신 자신의 돌 하나를 상하좌우로 한 칸 이동시킬 수 있다. 막혀 있으면 그 방향으로 쭉 날아가 첫 빈 칸에 착지한다.",
+    moveAbility: true,
+  },
+
+  sasin: {
+    name: "4신",
+    emoji: "⚡",
+    tagline: "단순하지만 강력한 신",
+    story: "5목이 아닌 4목만 만들면 승리하는, 단순하지만 매우 강력한 존재.",
+    winLength: 4,
+  },
+
+  bombguy: {
+    name: "폭탄가이",
+    emoji: "💣",
+    tagline: "전장의 파괴자",
+    story: "폭탄돌을 최대 3개 보유. 폭탄돌을 놓으면 3×3 범위가 폭발해 그 안의 모든 돌(아군 포함)이 사라지고, 폭발 지점은 5턴간 돌을 놓을 수 없다.",
+    initUses(player) { player.bombsLeft = 3; },
+    bombAbility: true,
+  },
+
+};
+
+/* 신규 캐릭터를 추가하려면 위 CHARACTERS 객체에 키-값을 하나 추가하면
+   선택 화면과 게임 로직에 자동으로 반영됩니다.
+   특수 메커니즘(따먹기, 주사위, 혼돈, 이동, 폭탄 등)을 새로 만들 경우에는
+   아래 게임 엔진의 해당 플래그 처리 분기에 로직을 추가해야 합니다. */
+
+
+/* =========================================================================
+   게임 상태 / 엔진
+   ========================================================================= */
+
+let selection = { p1: null, p2: null };
+
+const game = {
+  board: [],            // board[r][c] = null | 'black' | 'white'
+  blocked: [],          // blocked[r][c] = 0 (아님) 또는 남은 턴 수
+  players: [],          // [p1, p2]
+  currentIdx: 0,
+  winLength: WIN_LENGTH_DEFAULT,
+  gameOver: false,
+  pendingPreGame: null, // 선 배치 진행 상태
+  pendingStockRelease: false,
+  pendingTargetMode: null, // {type, callback}
+  extraTurnQueue: 0,    // 연속 턴 횟수
+  log(msg, cls){
+    const list = document.getElementById('log-list');
+    const div = document.createElement('div');
+    div.className = 'log-line' + (cls ? ' '+cls : '');
+    div.textContent = msg;
+    list.prepend(div);
+  },
+};
+
+function createPlayer(charKey, color, label){
+  const def = CHARACTERS[charKey];
+  const player = {
+    charKey, def, color, name: def.name, label,
+    usesLeft: {},
+    stock: 0,
+    bombsLeft: 0,
+    extraTurns: 0,
+  };
+  if (def.initUses) def.initUses(player);
+  return player;
+}
+
+/* ---------------- 선택 화면 렌더링 ---------------- */
+
+function renderCharGrid(containerId, slot){
+  const grid = document.getElementById(containerId);
+  grid.innerHTML = '';
+  Object.entries(CHARACTERS).forEach(([key, def]) => {
+    const card = document.createElement('div');
+    card.className = 'char-card';
+    card.innerHTML = `
+      <span class="emoji">${def.emoji}</span>
+      <div class="name">${def.name}</div>
+      <div class="tagline">${def.tagline}</div>
+    `;
+    card.addEventListener('click', () => {
+      selection[slot] = key;
+      [...grid.children].forEach(c => c.classList.remove('selected'));
+      card.classList.add('selected');
+      document.getElementById(slot + '-detail').innerHTML =
+        `<b>${def.emoji} ${def.name}</b><br>${def.story}`;
+      checkStartEnabled();
+      if (isMultiplayer && mpSocket) {
+        mpSocket.emit('select-char', { charKey: key });
+        document.getElementById('mp-select-status').textContent = '상대방이 선택하길 기다리는 중...';
+      }
+    });
+    grid.appendChild(card);
+  });
+}
+
+function checkStartEnabled(){
+  const btn = document.getElementById('start-btn');
+  btn.disabled = !(selection.p1 && selection.p2);
+}
+
+renderCharGrid('p1-grid', 'p1');
+renderCharGrid('p2-grid', 'p2');
+
+document.getElementById('start-btn').addEventListener('click', () => {
+  startGame();
+});
+
+document.getElementById('back-btn').addEventListener('click', () => {
+  switchScreen('select-screen');
+});
+
+document.getElementById('restart-btn').addEventListener('click', () => {
+  startGame();
+});
+
+function switchScreen(id){
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+/* ---------------- 게임 시작 ---------------- */
+
+function startGame(){
+  // 색 배정: 신흑돌이 있으면 그쪽이 흑, 없으면 p1=흑, p2=백
+  let p1Color = 'black', p2Color = 'white';
+  if (CHARACTERS[selection.p2].forceColor === 'black') {
+    p1Color = 'white'; p2Color = 'black';
+  }
+
+  game.board = Array.from({length: BOARD_SIZE}, () => Array(BOARD_SIZE).fill(null));
+  game.blocked = Array.from({length: BOARD_SIZE}, () => Array(BOARD_SIZE).fill(0));
+  game.gameOver = false;
+  game.pendingStockRelease = false;
+  game.pendingTargetMode = null;
+  game.extraTurnQueue = 0;
+
+  const p1 = createPlayer(selection.p1, p1Color, 'P1');
+  const p2 = createPlayer(selection.p2, p2Color, 'P2');
+  game.players = p1Color === 'black' ? [p1, p2] : [p2, p1]; // index0 = 흑 = 선공
+  game.currentIdx = 0;
+  game._winnerIdx = -1;
+
+  if (isMultiplayer) {
+    const myPlayer = myPlayerIdx === 0 ? p1 : p2;
+    myGamePlayerIdx = game.players.indexOf(myPlayer);
+    mpPendingLogLines = [];
+    document.getElementById('back-btn').style.display = 'none';
+    document.getElementById('restart-btn').style.display = 'none';
+  } else {
+    myGamePlayerIdx = -1;
+    document.getElementById('back-btn').style.display = '';
+    document.getElementById('restart-btn').style.display = '';
+  }
+
+  document.getElementById('log-list').innerHTML = '';
+  game.log(`게임 시작! ${game.players[0].emoji||''} ${game.players[0].name}(흑) vs ${game.players[1].name}(백)`, 'sys');
+  game.players.forEach(p => {
+    const wl = p.def.winLength || WIN_LENGTH_DEFAULT;
+    if (wl !== WIN_LENGTH_DEFAULT) game.log(`${p.name}: ${wl}목으로 승리`, 'sys');
+  });
+
+  buildBoardDOM();
+  renderPlayerCards();
+  switchScreen('game-screen');
+
+  // 선 배치 능력 처리 (예: 신흑돌)
+  runSetupPhase();
+}
+
+function runSetupPhase(){
+  const setupQueue = game.players.filter(p => p.def.setup);
+  function next(){
+    if (setupQueue.length === 0) {
+      renderBoard();
+      updateStatusTexts();
+      return;
+    }
+    const p = setupQueue.shift();
+    const beforeIdx = game.currentIdx;
+    p.def.setup(game, p);
+    // setup이 비동기(보드 클릭 대기)이므로 게임.preGameDoneCallback에서 next 호출
+    game.preGameDoneCallback = () => {
+      // 선 배치를 마치면 상대에게 턴이 넘어간다
+      game.currentIdx = 1 - beforeIdx;
+      next();
+    };
+  }
+  next();
+}
+
+/* ---------------- 보드 DOM ---------------- */
+
+function buildBoardDOM(){
+  const board = document.getElementById('board');
+  board.innerHTML = '';
+  board.style.gridTemplateColumns = `repeat(${BOARD_SIZE}, 32px)`;
+  board.style.gridTemplateRows = `repeat(${BOARD_SIZE}, 32px)`;
+  for (let r = 0; r < BOARD_SIZE; r++){
+    for (let c = 0; c < BOARD_SIZE; c++){
+      const cell = document.createElement('div');
+      cell.className = 'cell';
+      if (c === 0) cell.classList.add('edge-l');
+      if (c === BOARD_SIZE-1) cell.classList.add('edge-r');
+      if (r === 0) cell.classList.add('edge-t');
+      if (r === BOARD_SIZE-1) cell.classList.add('edge-b');
+      cell.dataset.r = r;
+      cell.dataset.c = c;
+      cell.addEventListener('click', () => onCellClick(r, c));
+      board.appendChild(cell);
+    }
+  }
+}
+
+function getCellEl(r,c){
+  return document.querySelector(`.cell[data-r="${r}"][data-c="${c}"]`);
+}
+
+function renderBoard(){
+  for (let r = 0; r < BOARD_SIZE; r++){
+    for (let c = 0; c < BOARD_SIZE; c++){
+      const cell = getCellEl(r,c);
+      cell.innerHTML = '';
+      cell.classList.remove('last-move','targetable','blocked-bg');
+      const val = game.board[r][c];
+      if (val){
+        const stone = document.createElement('div');
+        stone.className = 'stone ' + val;
+        cell.appendChild(stone);
+      }
+      if (game.blocked[r][c] > 0){
+        cell.classList.add('blocked-bg');
+        const mark = document.createElement('div');
+        mark.className = 'blocked-mark';
+        mark.textContent = '🚫';
+        cell.appendChild(mark);
+      }
+      if (game.lastMove && game.lastMove.r === r && game.lastMove.c === c){
+        cell.classList.add('last-move');
+      }
+      if (game.pendingTargetMode){
+        const ok = game.pendingTargetMode.isValid(r,c);
+        if (ok) cell.classList.add('targetable');
+      }
+    }
+  }
+  scheduleSync();
+}
+
+/* ---------------- 플레이어 카드 UI ---------------- */
+
+function renderPlayerCards(){
+  [0,1].forEach(i => {
+    const p = game.players[i];
+    const card = document.getElementById(`p${i+1}-card`);
+    card.querySelector('.emoji').textContent = p.def.emoji;
+    card.querySelector('.pname').textContent = p.def.name;
+    card.querySelector('.pcolor').textContent = p.color === 'black' ? '⚫ 흑돌' : '⚪ 백돌';
+    card.querySelector('.pc-ability').textContent = p.def.story;
+  });
+  updateStatusTexts();
+}
+
+function updateStatusTexts(){
+  [0,1].forEach(i => {
+    const p = game.players[i];
+    const card = document.getElementById(`p${i+1}-card`);
+    card.classList.toggle('active', game.currentIdx === i && !game.gameOver);
+
+    let status = '';
+    if (p.charKey === 'bom') status = `저장된 돌: ${p.stock}/5`;
+    if (p.charKey === 'bombguy') status = `남은 폭탄: ${p.bombsLeft}/3`;
+    if (p.charKey === 'gangbaekhan') status = p.usesLeft.invert > 0 ? '반전 능력 사용 가능' : '반전 능력 사용 완료';
+    card.querySelector('.pc-status').textContent = status;
+
+    renderActionArea(i, p, card);
+  });
+}
+
+function renderActionArea(i, p, card){
+  const area = card.querySelector('.pc-action-area');
+  area.innerHTML = '';
+  const isCurrent = game.currentIdx === i && !game.gameOver && !game.pendingPreGame;
+
+  if (!isCurrent) return;
+
+  // 강백한: 흑백 반전 버튼
+  if (p.def.active){
+    const canUse = p.def.active.canUse(game, p);
+    const btn = document.createElement('button');
+    btn.className = 'ability-btn';
+    btn.textContent = p.def.active.label;
+    btn.disabled = !canUse || !!game.pendingTargetMode;
+    btn.addEventListener('click', () => p.def.active.use(game, p));
+    area.appendChild(btn);
+  }
+
+  // 봄: 저장된 돌 방출 안내
+  if (p.charKey === 'bom' && p.stock > 0){
+    const info = document.createElement('div');
+    info.style.fontSize = '0.74rem';
+    info.style.color = '#9fd9a8';
+    info.textContent = `보드를 클릭하면 저장된 돌을 1개씩 방출합니다. (원하는 만큼 클릭 후 "방출 종료")`;
+    area.appendChild(info);
+
+    const endBtn = document.createElement('button');
+    endBtn.className = 'ability-btn';
+    endBtn.textContent = '이번 턴은 일반 배치로 진행';
+    endBtn.style.marginTop = '6px';
+    area.appendChild(endBtn);
+  }
+
+  // 무빙맨: 이동 모드 토글
+  if (p.charKey === 'movingman'){
+    const btn = document.createElement('button');
+    btn.className = 'ability-btn';
+    btn.textContent = game.moveMode ? '이동 취소 (돌 놓기로 전환)' : '돌 이동하기';
+    btn.addEventListener('click', () => {
+      game.moveMode = !game.moveMode;
+      game.pendingTargetMode = null;
+      renderBoard();
+      updateStatusTexts();
+    });
+    area.appendChild(btn);
+  }
+
+  // 폭탄가이: 폭탄 모드 토글
+  if (p.charKey === 'bombguy' && p.bombsLeft > 0){
+    const btn = document.createElement('button');
+    btn.className = 'ability-btn';
+    btn.textContent = game.bombMode ? '폭탄 취소 (일반 배치)' : `폭탄돌 놓기 (${p.bombsLeft}개 남음)`;
+    btn.addEventListener('click', () => {
+      game.bombMode = !game.bombMode;
+      renderBoard();
+      updateStatusTexts();
+    });
+    area.appendChild(btn);
+  }
+}
+
+/* ---------------- 메인 클릭 핸들러 ---------------- */
+
+function onCellClick(r, c){
+  if (game.gameOver) return;
+  if (isMultiplayer && myGamePlayerIdx >= 0) {
+    const isMyTurn = game.currentIdx === myGamePlayerIdx;
+    const isMyPreGame = game.pendingPreGame &&
+      game.players.indexOf(game.pendingPreGame.player) === myGamePlayerIdx;
+    if (!isMyTurn && !isMyPreGame) return;
+  }
+
+  // 선 배치 단계
+  if (game.pendingPreGame){
+    handlePreGameClick(r, c);
+    return;
+  }
+
+  // 타겟 지정 모드 (능력 발동 중 칸 선택 대기)
+  if (game.pendingTargetMode){
+    if (game.pendingTargetMode.isValid(r,c)){
+      game.pendingTargetMode.onPick(r,c);
+    }
+    return;
+  }
+
+  const current = game.players[game.currentIdx];
+
+  // 봄: 저장된 돌 방출
+  if (current.charKey === 'bom' && current.stock > 0){
+    if (game.board[r][c] || game.blocked[r][c] > 0) return;
+    placeStoneRaw(r, c, current.color);
+    current.stock--;
+    game.log(`${current.name}이(가) 저장한 돌을 방출! (남은 저장: ${current.stock})`, 'sys');
+    const win = checkWin(r, c, current.color);
+    applyAfterPlaceHooks(current, r, c);
+    renderBoard();
+    updateStatusTexts();
+    if (win){ return announceWin(current); }
+    if (current.stock === 0){
+      // 자동으로 턴 종료할지, 계속 더 낼지는 자유. 0개되면 턴 종료.
+      game.endTurn();
+    }
+    return;
+  }
+
+  // 무빙맨: 이동 모드
+  if (current.charKey === 'movingman' && game.moveMode){
+    if (game.board[r][c] !== current.color) return;
+    startMoveSelection(current, r, c);
+    return;
+  }
+
+  // 폭탄가이: 폭탄 모드
+  if (current.charKey === 'bombguy' && game.bombMode){
+    if (game.board[r][c] || game.blocked[r][c] > 0) return;
+    detonateBomb(current, r, c);
+    return;
+  }
+
+  // 일반 배치
+  if (game.board[r][c] || game.blocked[r][c] > 0) return;
+  doNormalPlacement(current, r, c);
+}
+
+/* ---------------- 선 배치 (신흑돌) ---------------- */
+
+function handlePreGameClick(r, c){
+  const pg = game.pendingPreGame;
+  if (game.board[r][c]) return;
+  game.board[r][c] = pg.player.color;
+  pg.placed++;
+  renderBoard();
+  game.log(`${pg.player.name}이(가) 선 배치 돌을 놓았다. (${pg.placed}/${pg.count})`, 'sys');
+  if (pg.placed >= pg.count){
+    game.pendingPreGame = null;
+    if (game.preGameDoneCallback) game.preGameDoneCallback();
+    // 선 배치 완료 시 즉시 강제 동기화
+    // (이 시점에 currentIdx가 상대로 바뀌어 scheduleSync가 발동하지 않기 때문)
+    if (isMultiplayer && mpSocket) {
+      mpSocket.emit('game-sync', buildSyncState());
+      mpPendingLogLines = [];
+    }
+  }
+}
+
+game.requestPreGamePlacement = function(player, count){
+  game.pendingPreGame = { player, count, placed: 0 };
+  game.log(`${player.name}: 시작 전 돌 ${count}개를 원하는 위치에 배치하세요.`, 'sys');
+};
+
+/* ---------------- 일반 배치 처리 ---------------- */
+
+function doNormalPlacement(player, r, c){
+  placeStoneRaw(r, c, player.color);
+  game.lastMove = {r, c};
+
+  // 풉키풉스: 혼돈 효과
+  let chaosInfo = null;
+  if (player.def.chaosAbility){
+    chaosInfo = applyChaosEffect();
+  }
+
+  renderBoard();
+
+  // 승리 체크는 본인 돌 기준으로 먼저
+  const won = checkWin(r, c, player.color);
+
+  // 안수구류 따먹기 처리 (양쪽 모두 가능 - 누가 두든 상대 돌이 포위되면 제거됨)
+  applyGoCaptureIfAny(player, r, c);
+
+  if (chaosInfo){
+    game.log(`🤡 혼돈 발동: (${chaosInfo.r+1},${chaosInfo.c+1})에 ${chaosInfo.color==='black'?'흑':'백'}돌이 무작위로 추가되었다!`, 'sys');
+    // 혼돈으로 인한 승리 체크 (양쪽 다)
+    const chaosWin = checkWin(chaosInfo.r, chaosInfo.c, chaosInfo.color);
+    if (chaosWin){
+      renderBoard();
+      const winner = game.players.find(p => p.color === chaosInfo.color);
+      return announceWin(winner, true);
+    }
+  }
+
+  renderBoard();
+
+  if (won){
+    return announceWin(player);
+  }
+
+  // 할릴리: 주사위 선택
+  if (player.def.diceAbility){
+    offerDiceRoll(player);
+    return; // 다이스 처리 후 턴 종료는 dice 로직에서
+  }
+
+  applyAfterPlaceHooks(player, r, c);
+  game.endTurn();
+}
+
+function placeStoneRaw(r, c, color){
+  game.board[r][c] = color;
+}
+
+function applyAfterPlaceHooks(player, r, c){
+  if (player.def.onAfterPlace) player.def.onAfterPlace(game, player, r, c);
+}
+
+/* ---------------- 승리 판정 ---------------- */
+
+function getWinLength(color){
+  const p = game.players.find(p => p.color === color);
+  return (p && p.def.winLength) || WIN_LENGTH_DEFAULT;
+}
+
+function checkWin(r, c, color){
+  const winLength = getWinLength(color);
+  const dirs = [[1,0],[0,1],[1,1],[1,-1]];
+  for (const [dr,dc] of dirs){
+    let count = 1;
+    let rr = r+dr, cc = c+dc;
+    while (inBounds(rr,cc) && game.board[rr][cc] === color){ count++; rr+=dr; cc+=dc; }
+    rr = r-dr; cc = c-dc;
+    while (inBounds(rr,cc) && game.board[rr][cc] === color){ count++; rr-=dr; cc-=dc; }
+    if (count >= winLength) return true;
+  }
+  return false;
+}
+
+function inBounds(r,c){
+  return r>=0 && r<BOARD_SIZE && c>=0 && c<BOARD_SIZE;
+}
+
+function announceWin(player, byChaos){
+  game.gameOver = true;
+  game._winnerIdx = game.players.indexOf(player);
+  game.log(`🏆 ${player.name} 승리!` + (byChaos ? ' (혼돈의 돌로 인한 승리)' : ''), 'sys');
+
+  const actionButtons = isMultiplayer ? `
+    <button class="primary" id="modal-restart">같은 캐릭터로 다시</button>
+    <button class="ghost" id="modal-select">처음으로</button>
+  ` : `
+    <button class="primary" id="modal-restart">다시 하기</button>
+    <button class="ghost" id="modal-select">캐릭터 다시 선택</button>
+  `;
+  showModal(`
+    <h2>🏆 ${player.def.emoji} ${player.def.name} 승리!</h2>
+    <p>${player.color === 'black' ? '⚫ 흑돌' : '⚪ 백돌'} 진영이 ${getWinLength(player.color)}목을 완성했습니다.</p>
+    <div class="modal-actions">${actionButtons}</div>
+  `);
+  document.getElementById('modal-restart').addEventListener('click', () => {
+    if (isMultiplayer) {
+      hideModal();
+      mpSocket.emit('mp-restart');
+      startGame();
+    } else {
+      hideModal(); startGame();
+    }
+  });
+  document.getElementById('modal-select').addEventListener('click', () => {
+    if (isMultiplayer) {
+      location.reload();
+    } else {
+      hideModal(); switchScreen('select-screen');
+    }
+  });
+  updateStatusTexts();
+}
+
+/* ---------------- 턴 전환 ---------------- */
+
+function endTurn(){
+  if (game.gameOver) return;
+  // 턴 전환 전에 "내 턴이었는지" 기록
+  const wasMyTurn = isMultiplayer && myGamePlayerIdx >= 0 &&
+    game.currentIdx === myGamePlayerIdx;
+
+  if (game.extraTurnQueue > 0){
+    game.extraTurnQueue--;
+    game.log(`연속 턴 발동! 같은 플레이어가 한 번 더 둡니다.`, 'sys');
+  } else {
+    game.currentIdx = 1 - game.currentIdx;
+  }
+  game.moveMode = false;
+  game.bombMode = false;
+  decrementBlocked();
+  const next = game.players[game.currentIdx];
+  if (next.def.onTurnStart) next.def.onTurnStart(game, next);
+  renderBoard();
+  updateStatusTexts();
+
+  // currentIdx가 이미 상대로 바뀌어 scheduleSync가 발동 안 되므로 즉시 강제 동기화
+  // setTimeout(0)으로 동기 코드(예: dice case의 extraTurnQueue 설정)가 끝난 뒤 실행
+  if (wasMyTurn && mpSocket) {
+    setTimeout(() => {
+      if (mpSyncTimer) { clearTimeout(mpSyncTimer); mpSyncTimer = null; }
+      mpSocket.emit('game-sync', buildSyncState());
+      mpPendingLogLines = [];
+    }, 0);
+  }
+}
+game.endTurn = endTurn;
+
+function decrementBlocked(){
+  for (let r=0;r<BOARD_SIZE;r++){
+    for (let c=0;c<BOARD_SIZE;c++){
+      if (game.blocked[r][c] > 0) game.blocked[r][c]--;
+    }
+  }
+}
+
+/* ---------------- 강백한: 흑백 반전 ---------------- */
+
+game.invertAllStones = function(){
+  for (let r=0;r<BOARD_SIZE;r++){
+    for (let c=0;c<BOARD_SIZE;c++){
+      const v = game.board[r][c];
+      if (v === 'black') game.board[r][c] = 'white';
+      else if (v === 'white') game.board[r][c] = 'black';
+    }
+  }
+  renderBoard();
+};
+
+/* ---------------- 안수구: 바둑 따먹기 ---------------- */
+
+function applyGoCaptureIfAny(actingPlayer, r, c){
+  const hasGoRule = game.players.some(p => p.def.goCapture);
+  if (!hasGoRule) return;
+
+  const opponentColor = game.board[r][c] === 'black' ? 'white' : 'black';
+  // 방금 놓은 돌 주변의 상대 그룹들을 검사
+  const dirs = [[1,0],[-1,0],[0,1],[0,-1]];
+  const checked = new Set();
+  for (const [dr,dc] of dirs){
+    const nr = r+dr, nc = c+dc;
+    if (!inBounds(nr,nc)) continue;
+    if (game.board[nr][nc] !== opponentColor) continue;
+    const key = nr+','+nc;
+    if (checked.has(key)) continue;
+    const group = getGroup(nr, nc, opponentColor);
+    group.forEach(k => checked.add(k));
+    if (!groupHasLiberty(group)){
+      removeGroup(group);
+      const winnerColorOwner = game.players.find(p => p.color !== opponentColor);
+      game.log(`📰 안수구의 따먹기 발동! ${opponentColor==='black'?'흑':'백'}돌 ${group.length}개가 제거되었다.`, 'dmg');
+    }
+  }
+}
+
+function getGroup(r, c, color){
+  const group = new Set();
+  const stack = [[r,c]];
+  while (stack.length){
+    const [cr, cc] = stack.pop();
+    const key = cr+','+cc;
+    if (group.has(key)) continue;
+    if (!inBounds(cr,cc)) continue;
+    if (game.board[cr][cc] !== color) continue;
+    group.add(key);
+    [[1,0],[-1,0],[0,1],[0,-1]].forEach(([dr,dc]) => {
+      stack.push([cr+dr, cc+dc]);
+    });
+  }
+  return group;
+}
+
+function groupHasLiberty(group){
+  for (const key of group){
+    const [r,c] = key.split(',').map(Number);
+    for (const [dr,dc] of [[1,0],[-1,0],[0,1],[0,-1]]){
+      const nr=r+dr, nc=c+dc;
+      if (inBounds(nr,nc) && game.board[nr][nc] === null) return true;
+    }
+  }
+  return false;
+}
+
+function removeGroup(group){
+  for (const key of group){
+    const [r,c] = key.split(',').map(Number);
+    game.board[r][c] = null;
+  }
+  renderBoard();
+}
+
+/* ---------------- 할릴리: 주사위 ---------------- */
+
+function offerDiceRoll(player){
+  showModal(`
+    <h2>🎲 ${player.name}의 선택</h2>
+    <p>주사위를 굴리시겠습니까? (안 굴려도 됩니다)</p>
+    <div class="modal-actions">
+      <button class="primary" id="dice-roll-btn">주사위 굴리기</button>
+      <button class="ghost" id="dice-skip-btn">굴리지 않기</button>
+    </div>
+  `);
+  document.getElementById('dice-roll-btn').addEventListener('click', () => {
+    hideModal();
+    rollDiceSequence(player);
+  });
+  document.getElementById('dice-skip-btn').addEventListener('click', () => {
+    hideModal();
+    applyAfterPlaceHooks(player, game.lastMove.r, game.lastMove.c);
+    game.endTurn();
+  });
+}
+
+function rollDiceSequence(player){
+  const value = Math.floor(Math.random()*6)+1;
+  showModal(`
+    <h2>🎲 주사위 결과</h2>
+    <div class="dice-display">${value}</div>
+    <p id="dice-result-text">결과를 적용합니다...</p>
+    <div class="modal-actions">
+      <button class="primary" id="dice-ok-btn">확인</button>
+    </div>
+  `);
+
+  let resultText = '';
+  const opponent = game.players[1 - game.players.indexOf(player)];
+
+  switch(value){
+    case 1:
+      resultText = '상대에게 연속 2턴이 주어집니다.';
+      break;
+    case 2:
+      resultText = '내 돌 하나가 제거됩니다.';
+      break;
+    case 3:
+      resultText = '내 돌 하나를 한 칸 이동시킬 수 있습니다.';
+      break;
+    case 4:
+      resultText = '아무 일도 일어나지 않습니다.';
+      break;
+    case 5:
+      resultText = '상대 돌 하나가 제거됩니다.';
+      break;
+    case 6:
+      resultText = '턴이 다시 시작됩니다! 돌을 한 번 더 놓을 수 있습니다.';
+      break;
+  }
+  document.getElementById('dice-result-text').textContent = resultText;
+
+  document.getElementById('dice-ok-btn').addEventListener('click', () => {
+    hideModal();
+    executeDiceEffect(value, player, opponent);
+  });
+}
+
+function executeDiceEffect(value, player, opponent){
+  game.log(`🎲 ${player.name} 주사위 결과: ${value}`, 'sys');
+  switch(value){
+    case 1:
+      game.log(`${opponent.name}에게 연속 2턴이 주어집니다.`, 'dmg');
+      finishDiceAndEndTurn(player); // 상대로 턴이 넘어간 뒤
+      game.extraTurnQueue = 1;     // 상대가 1턴 추가로 더 (총 2턴)
+      break;
+    case 2:
+      requestRemoveOwnStone(player, () => finishDiceAndEndTurn(player));
+      break;
+    case 3:
+      requestMoveOwnStoneForDice(player, () => finishDiceAndEndTurn(player));
+      break;
+    case 4:
+      finishDiceAndEndTurn(player);
+      break;
+    case 5:
+      requestRemoveOpponentStone(opponent, player, () => finishDiceAndEndTurn(player));
+      break;
+    case 6:
+      game.log(`${player.name}의 턴이 다시 시작됩니다.`, 'sys');
+      applyAfterPlaceHooks(player, game.lastMove.r, game.lastMove.c);
+      renderBoard();
+      updateStatusTexts();
+      // 턴을 넘기지 않고 그대로 둠 (currentIdx 유지) - 다시 배치 가능
+      break;
+  }
+}
+
+function finishDiceAndEndTurn(player){
+  applyAfterPlaceHooks(player, game.lastMove.r, game.lastMove.c);
+  game.endTurn();
+}
+
+function requestRemoveOwnStone(player, cb){
+  const stones = collectStones(player.color);
+  if (stones.length === 0){ cb(); return; }
+  game.pendingTargetMode = {
+    isValid: (r,c) => game.board[r][c] === player.color,
+    onPick: (r,c) => {
+      game.board[r][c] = null;
+      game.pendingTargetMode = null;
+      game.log(`${player.name}의 돌 하나가 제거되었습니다.`, 'dmg');
+      renderBoard();
+      cb();
+    }
+  };
+  renderBoard();
+}
+
+function requestRemoveOpponentStone(opponent, player, cb){
+  const stones = collectStones(opponent.color);
+  if (stones.length === 0){ cb(); return; }
+  game.pendingTargetMode = {
+    isValid: (r,c) => game.board[r][c] === opponent.color,
+    onPick: (r,c) => {
+      game.board[r][c] = null;
+      game.pendingTargetMode = null;
+      game.log(`${opponent.name}의 돌 하나가 제거되었습니다.`, 'dmg');
+      renderBoard();
+      cb();
+    }
+  };
+  renderBoard();
+}
+
+function requestMoveOwnStoneForDice(player, cb){
+  const stones = collectStones(player.color);
+  if (stones.length === 0){ cb(); return; }
+  game.pendingTargetMode = {
+    isValid: (r,c) => game.board[r][c] === player.color,
+    onPick: (r,c) => {
+      game.pendingTargetMode = null;
+      startSimpleMoveSelection(player, r, c, cb);
+    }
+  };
+  renderBoard();
+}
+
+function startSimpleMoveSelection(player, fromR, fromC, afterCb){
+  const dirs = [[-1,0],[1,0],[0,-1],[0,1]];
+  game.pendingTargetMode = {
+    isValid: (r,c) => {
+      return dirs.some(([dr,dc]) => {
+        const nr = fromR+dr, nc = fromC+dc;
+        return nr===r && nc===c && inBounds(nr,nc) && game.board[nr][nc] === null && game.blocked[nr][nc] === 0;
+      });
+    },
+    onPick: (r,c) => {
+      game.board[fromR][fromC] = null;
+      game.board[r][c] = player.color;
+      game.pendingTargetMode = null;
+      game.lastMove = {r,c};
+      game.log(`${player.name}이(가) 돌을 (${fromR+1},${fromC+1}) → (${r+1},${c+1})로 이동시켰다.`, 'sys');
+      renderBoard();
+      const won = checkWin(r, c, player.color);
+      applyGoCaptureIfAny(player, r, c);
+      renderBoard();
+      if (won){ announceWin(player); return; }
+      if (afterCb) afterCb();
+      else { applyAfterPlaceHooks(player, r, c); game.endTurn(); }
+    }
+  };
+  renderBoard();
+  updateStatusTexts();
+}
+
+function collectStones(color){
+  const arr = [];
+  for (let r=0;r<BOARD_SIZE;r++) for (let c=0;c<BOARD_SIZE;c++) if (game.board[r][c]===color) arr.push([r,c]);
+  return arr;
+}
+
+/* ---------------- 무빙맨: 이동 ---------------- */
+
+function startMoveSelection(player, fromR, fromC, afterCb){
+  const validDirs = [[-1,0],[1,0],[0,-1],[0,1]];
+  game.pendingTargetMode = {
+    isValid: (r,c) => {
+      for (const [dr,dc] of validDirs){
+        const land = findLanding(fromR, fromC, dr, dc);
+        if (land && land[0]===r && land[1]===c) return true;
+      }
+      return false;
+    },
+    onPick: (r,c) => {
+      game.board[fromR][fromC] = null;
+      game.board[r][c] = player.color;
+      game.pendingTargetMode = null;
+      game.lastMove = {r,c};
+      game.log(`${player.name}이(가) 돌을 (${fromR+1},${fromC+1}) → (${r+1},${c+1})로 이동시켰다.`, 'sys');
+      renderBoard();
+      const won = checkWin(r, c, player.color);
+      applyGoCaptureIfAny(player, r, c);
+      renderBoard();
+      if (won){ announceWin(player); return; }
+      if (afterCb) afterCb();
+      else { applyAfterPlaceHooks(player, r, c); game.endTurn(); }
+    }
+  };
+  game.moveMode = false;
+  renderBoard();
+  updateStatusTexts();
+}
+
+function findLanding(r, c, dr, dc){
+  let nr = r+dr, nc = c+dc;
+  if (!inBounds(nr,nc)) return null;
+  if (game.board[nr][nc] === null && game.blocked[nr][nc] === 0) return [nr,nc];
+  // 막혀있으면 그 방향으로 계속 진행해 첫 빈칸 탐색
+  while (inBounds(nr,nc) && (game.board[nr][nc] !== null || game.blocked[nr][nc] > 0)){
+    nr += dr; nc += dc;
+  }
+  if (!inBounds(nr,nc)) return null;
+  return [nr,nc];
+}
+
+/* ---------------- 폭탄가이 ---------------- */
+
+function detonateBomb(player, r, c){
+  game.board[r][c] = player.color; // 폭탄돌 자체도 일단 놓임
+  player.bombsLeft--;
+  game.bombMode = false;
+  game.log(`💣 ${player.name}이(가) (${r+1},${c+1})에 폭탄돌을 설치! 대폭발 발생!`, 'dmg');
+
+  let destroyed = 0;
+  for (let dr=-1; dr<=1; dr++){
+    for (let dc=-1; dc<=1; dc++){
+      const nr=r+dr, nc=c+dc;
+      if (!inBounds(nr,nc)) continue;
+      if (game.board[nr][nc] !== null) destroyed++;
+      game.board[nr][nc] = null;
+      game.blocked[nr][nc] = 5;
+    }
+  }
+  game.log(`폭발로 돌 ${destroyed}개가 사라지고 해당 구역은 5턴간 봉쇄됩니다.`, 'dmg');
+  renderBoard();
+  updateStatusTexts();
+  game.endTurn();
+}
+
+/* ---------------- 풉키풉스: 혼돈 ---------------- */
+
+function applyChaosEffect(){
+  const empties = [];
+  for (let r=0;r<BOARD_SIZE;r++) for (let c=0;c<BOARD_SIZE;c++) if (game.board[r][c]===null && game.blocked[r][c]===0) empties.push([r,c]);
+  if (empties.length === 0) return null;
+  const [r,c] = empties[Math.floor(Math.random()*empties.length)];
+  const color = Math.random() < 0.5 ? 'black' : 'white';
+  game.board[r][c] = color;
+  return {r,c,color};
+}
+
+/* ---------------- 모달 유틸 ---------------- */
+
+function showModal(html){
+  document.getElementById('modal-box').innerHTML = html;
+  document.getElementById('modal-overlay').classList.add('active');
+}
+function hideModal(){
+  document.getElementById('modal-overlay').classList.remove('active');
+}
+
+/* =========================================================================
+   멀티플레이어 (Socket.io)
+   ========================================================================= */
+
+let isMultiplayer = false;
+let myPlayerIdx = 0;       // 0 = 방 생성자(p1 슬롯), 1 = 입장자(p2 슬롯)
+let myGamePlayerIdx = -1;  // game.players[] 에서 내 인덱스
+let mpSocket = null;
+let mpApplyingSync = false;
+let mpPendingLogLines = [];
+let mpSyncTimer = null;
+
+// 로그 가로채기 (멀티플레이에서 상대에게 전송)
+const _origLog = game.log.bind(game);
+game.log = function(msg, cls) {
+  _origLog(msg, cls);
+  if (isMultiplayer) mpPendingLogLines.push({ msg, cls });
+};
+
+/* -- 로비 버튼 이벤트 -- */
+document.getElementById('local-play-btn').addEventListener('click', () => {
+  isMultiplayer = false;
+  resetSelectScreen();
+  switchScreen('select-screen');
+});
+
+document.getElementById('create-room-btn').addEventListener('click', () => {
+  initMpSocket();
+  mpSocket.emit('create-room');
+});
+
+document.getElementById('join-room-btn').addEventListener('click', () => {
+  const code = document.getElementById('room-code-input').value.trim().toUpperCase();
+  if (code.length !== 4) {
+    setLobbyStatus('<span style="color:var(--danger)">방 코드는 4자리입니다.</span>');
+    return;
+  }
+  initMpSocket();
+  mpSocket.emit('join-room', { code });
+});
+
+function setLobbyStatus(html) {
+  document.getElementById('lobby-status').innerHTML = html;
+}
+
+function resetSelectScreen() {
+  selection = { p1: null, p2: null };
+  ['p1', 'p2'].forEach(s => {
+    const g = document.getElementById(`${s}-grid`);
+    g.style.pointerEvents = '';
+    g.style.opacity = '';
+    [...g.children].forEach(c => c.classList.remove('selected'));
+    document.getElementById(`${s}-detail`).textContent = '캐릭터를 선택하면 설명이 여기 표시됩니다.';
+  });
+  document.getElementById('start-btn').style.display = '';
+  document.getElementById('mp-select-status').textContent = '';
+  checkStartEnabled();
+}
+
+/* -- 소켓 초기화 -- */
+function initMpSocket() {
+  if (mpSocket) return;
+  mpSocket = io();
+
+  mpSocket.on('room-created', ({ code }) => {
+    myPlayerIdx = 0;
+    isMultiplayer = true;
+    setLobbyStatus(
+      `방 코드: <b style="font-size:1.6rem;color:var(--gold);letter-spacing:6px">${code}</b><br>` +
+      `<span style="color:var(--ink-dim)">이 코드를 친구에게 알려주세요. 친구가 접속하길 기다리는 중...</span>`
+    );
+  });
+
+  mpSocket.on('opponent-joined', () => {
+    setLobbyStatus('친구가 접속했습니다! 캐릭터를 선택하세요.');
+    setTimeout(() => enterMpSelect(), 700);
+  });
+
+  mpSocket.on('room-joined', ({ code }) => {
+    myPlayerIdx = 1;
+    isMultiplayer = true;
+    setLobbyStatus(`방 [${code}] 입장 완료! 캐릭터를 선택하세요.`);
+    setTimeout(() => enterMpSelect(), 500);
+  });
+
+  mpSocket.on('join-error', ({ msg }) => {
+    setLobbyStatus(`<span style="color:var(--danger)">${msg}</span>`);
+  });
+
+  mpSocket.on('opponent-char', ({ charKey }) => {
+    const opSlot = myPlayerIdx === 0 ? 'p2' : 'p1';
+    selection[opSlot] = charKey;
+    const opGrid = document.getElementById(`${opSlot}-grid`);
+    [...opGrid.children].forEach(c => c.classList.remove('selected'));
+    const keys = Object.keys(CHARACTERS);
+    const idx = keys.indexOf(charKey);
+    if (idx >= 0 && opGrid.children[idx]) opGrid.children[idx].classList.add('selected');
+    const def = CHARACTERS[charKey];
+    document.getElementById(`${opSlot}-detail`).innerHTML = `<b>${def.emoji} ${def.name}</b><br>${def.story}`;
+    const mySlot = myPlayerIdx === 0 ? 'p1' : 'p2';
+    if (selection[mySlot]) {
+      document.getElementById('mp-select-status').textContent = '양쪽 선택 완료! 게임을 시작합니다...';
+    } else {
+      document.getElementById('mp-select-status').textContent = '상대방이 캐릭터를 선택했습니다. 당신도 선택하세요!';
+    }
+  });
+
+  mpSocket.on('both-ready', ({ chars }) => {
+    selection.p1 = chars[0];
+    selection.p2 = chars[1];
+    startGame();
+  });
+
+  mpSocket.on('game-sync', (state) => {
+    applyGameSync(state);
+  });
+
+  mpSocket.on('mp-restart', () => {
+    hideModal();
+    startGame();
+  });
+
+  mpSocket.on('opponent-disconnected', () => {
+    game.gameOver = true;
+    showModal(`
+      <h2>연결 끊김</h2>
+      <p>상대방과의 연결이 끊어졌습니다.</p>
+      <div class="modal-actions">
+        <button class="primary" onclick="location.reload()">처음으로</button>
+      </div>
+    `);
+  });
+}
+
+function enterMpSelect() {
+  resetSelectScreen();
+  const opSlot = myPlayerIdx === 0 ? 'p2' : 'p1';
+  const opGrid = document.getElementById(`${opSlot}-grid`);
+  opGrid.style.pointerEvents = 'none';
+  opGrid.style.opacity = '0.4';
+  document.getElementById(`${opSlot}-detail`).textContent = '상대방이 선택 중...';
+  document.getElementById('start-btn').style.display = 'none';
+  switchScreen('select-screen');
+}
+
+/* -- 상태 동기화 -- */
+function scheduleSync() {
+  if (!isMultiplayer || !mpSocket || mpApplyingSync) return;
+  if (mpSyncTimer) clearTimeout(mpSyncTimer);
+  mpSyncTimer = setTimeout(() => {
+    mpSyncTimer = null;
+    if (!game.players.length) return;
+    const isMyTurn = game.currentIdx === myGamePlayerIdx;
+    const isMyPreGame = game.pendingPreGame &&
+      game.players.indexOf(game.pendingPreGame.player) === myGamePlayerIdx;
+    if (!isMyTurn && !isMyPreGame) return;
+    mpSocket.emit('game-sync', buildSyncState());
+    mpPendingLogLines = [];
+  }, 50);
+}
+
+function buildSyncState() {
+  return {
+    board: game.board.map(r => [...r]),
+    blocked: game.blocked.map(r => [...r]),
+    currentIdx: game.currentIdx,
+    extraTurnQueue: game.extraTurnQueue,
+    lastMove: game.lastMove || null,
+    gameOver: game.gameOver,
+    moveMode: !!game.moveMode,
+    bombMode: !!game.bombMode,
+    pendingPreGame: game.pendingPreGame ? {
+      playerIdx: game.players.indexOf(game.pendingPreGame.player),
+      count: game.pendingPreGame.count,
+      placed: game.pendingPreGame.placed,
+    } : null,
+    playerStates: game.players.map(p => ({
+      stock: p.stock || 0,
+      bombsLeft: p.bombsLeft || 0,
+      usesLeft: Object.assign({}, p.usesLeft),
+    })),
+    winnerIdx: game._winnerIdx !== undefined ? game._winnerIdx : -1,
+    logLines: [...mpPendingLogLines],
+  };
+}
+
+function applyGameSync(state) {
+  if (!isMultiplayer) return;
+  mpApplyingSync = true;
+
+  game.board = state.board;
+  game.blocked = state.blocked;
+  game.currentIdx = state.currentIdx;
+  game.extraTurnQueue = state.extraTurnQueue;
+  game.lastMove = state.lastMove;
+  game.moveMode = state.moveMode;
+  game.bombMode = state.bombMode;
+
+  if (state.playerStates && game.players.length) {
+    state.playerStates.forEach((ps, i) => {
+      if (game.players[i]) {
+        game.players[i].stock = ps.stock;
+        game.players[i].bombsLeft = ps.bombsLeft;
+        game.players[i].usesLeft = ps.usesLeft;
+      }
+    });
+  }
+
+  if (state.pendingPreGame) {
+    game.pendingPreGame = {
+      player: game.players[state.pendingPreGame.playerIdx],
+      count: state.pendingPreGame.count,
+      placed: state.pendingPreGame.placed,
+    };
+  } else {
+    game.pendingPreGame = null;
+    game.preGameDoneCallback = null;
+  }
+
+  // 상대 턴에는 타겟/이동 모드 불필요
+  if (game.currentIdx !== myGamePlayerIdx) {
+    game.pendingTargetMode = null;
+  }
+
+  if (state.logLines && state.logLines.length > 0) {
+    state.logLines.forEach(({ msg, cls }) => _origLog(msg, cls));
+  }
+
+  renderBoard();
+  updateStatusTexts();
+  mpApplyingSync = false;
+
+  if (state.gameOver && !game.gameOver) {
+    game.gameOver = true;
+    if (state.winnerIdx >= 0 && game.players[state.winnerIdx]) {
+      announceWin(game.players[state.winnerIdx]);
+    }
+  }
+}
+
+</script>
+</body>
+</html>
