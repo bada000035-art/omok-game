@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>박이아이 게임 모음</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body {
+  font-family: "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+  background: #FBF3E4;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 40px 20px 60px;
+}
+h1 {
+  font-size: 32px;
+  font-weight: 900;
+  color: #5A2E00;
+  margin-bottom: 8px;
+  text-align: center;
+}
+.sub {
+  font-size: 16px;
+  color: #9A7A50;
+  margin-bottom: 36px;
+  text-align: center;
+}
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 22px;
+  max-width: 860px;
+  width: 100%;
+}
+.card {
+  background: #FFF;
+  border: 4px solid #2E2A22;
+  border-radius: 22px;
+  padding: 28px 22px;
+  text-align: center;
+  text-decoration: none;
+  color: inherit;
+  transition: transform 0.13s, box-shadow 0.13s;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+.card:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 10px 28px rgba(0,0,0,0.13);
+}
+.card:active { transform: scale(0.98); }
+.card-icon { font-size: 52px; }
+.card-title {
+  font-size: 22px;
+  font-weight: 900;
+  color: #2E2A22;
+}
+.card-desc {
+  font-size: 14px;
+  color: #7A6A50;
+  line-height: 1.7;
+}
+.badge {
+  font-size: 12px;
+  font-weight: 800;
+  padding: 3px 12px;
+  border-radius: 999px;
+  margin-top: 4px;
+}
+.badge-quiz  { background: #E2F2E7; color: #2F6B45; border: 2px solid #4F9D6E; }
+.badge-game  { background: #E8F0FF; color: #1A4A9A; border: 2px solid #3060CC; }
+</style>
+</head>
+<body>
+
+<h1>🎮 박이아이 게임 모음</h1>
+<p class="sub">홍영주 할머니와 함께하는 미니게임들</p>
+
+<div class="grid">
+
+  <a class="card" href="게임/홍영주_체질퀴즈.html">
+    <div class="card-icon">👵</div>
+    <div class="card-title">홍영주 체질 퀴즈</div>
+    <div class="card-desc">사상체질 맞추기 퀴즈!<br>틀리면 홍영주 할머니가 화냅니다 😡<br>3연속 오답 → 강제 종료!!</div>
+    <span class="badge badge-quiz">퀴즈 게임</span>
+  </a>
+
+  <a class="card" href="게임/체질왕홍영주.html">
+    <div class="card-icon">🏥</div>
+    <div class="card-title">체질왕 홍영주</div>
+    <div class="card-desc">사상체질 진료소 시뮬레이션<br>손님의 체질을 진단하고<br>올바른 처방전을 내려보세요!</div>
+    <span class="badge badge-game">시뮬레이션</span>
+  </a>
+
+  <a class="card" href="게임/오목배틀2.html">
+    <div class="card-icon">⚫</div>
+    <div class="card-title">비대칭 오목 배틀</div>
+    <div class="card-desc">서로 다른 규칙으로 싸우는<br>특별한 오목 게임!</div>
+    <span class="badge badge-game">2인 대전</span>
+  </a>
+
+</div>
+
+</body>
+</html>
