@@ -1,0 +1,983 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<title>체질왕 홍영주</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:#0d0b07;color:#c8a96e;font-family:'Courier New',Courier,monospace;min-height:100vh;overflow:hidden;font-size:19px;}
+
+/* TITLE */
+#title-screen{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;background:radial-gradient(ellipse at center,#1a1209 0%,#050300 100%);}
+.title-photo{width:220px;height:220px;object-fit:cover;border:3px solid #8b6914;border-radius:4px;margin-bottom:18px;}
+.title-main{font-size:3em;color:#e8c97e;text-shadow:0 0 30px #8b6914;letter-spacing:5px;margin-bottom:8px;text-align:center;}
+.title-sub{font-size:1.1em;color:#6a5030;letter-spacing:3px;margin-bottom:26px;}
+.title-desc{font-size:1em;color:#5a4a2a;max-width:480px;line-height:2;text-align:center;margin-bottom:32px;border:1px solid #2a1f0a;padding:18px 24px;background:#0a0800;}
+.btn-main{background:#1a1500;color:#c8a96e;border:2px solid #8b6914;padding:16px 48px;font-size:1.15em;font-family:'Courier New',monospace;cursor:pointer;letter-spacing:3px;transition:all .2s;margin:6px;}
+.btn-main:hover{background:#8b6914;color:#0d0b07;}
+
+/* HUD */
+#hud{background:#131007;border-bottom:2px solid #3a2a0a;padding:10px 22px;display:flex;align-items:center;justify-content:space-between;height:66px;}
+.hud-title{font-size:1.1em;color:#e8c97e;letter-spacing:2px;}
+.hud-day{font-size:1em;color:#907840;}
+.sus-wrap{display:flex;align-items:center;gap:9px;}
+.sus-label{font-size:0.9em;color:#a87050;}
+.sus-bar{width:160px;height:17px;background:#1a1205;border:1px solid #3a2a0a;overflow:hidden;}
+.sus-fill{height:100%;background:linear-gradient(90deg,#4a6a00,#8a9a00);transition:width .5s,background .5s;}
+.sus-pct{font-size:0.9em;color:#cc5533;min-width:38px;}
+.rep-display{font-size:1em;color:#7ab87a;}
+.ref-btn{background:none;border:1px solid #4a3a1a;color:#6a5030;padding:7px 14px;font-size:0.9em;font-family:'Courier New',monospace;cursor:pointer;}
+.ref-btn:hover{border-color:#8b6914;color:#c8a96e;}
+
+/* GAME LAYOUT */
+#game-screen{display:grid;grid-template-columns:260px 1fr 310px;height:calc(100vh - 66px);}
+
+/* LEFT */
+.p-panel{background:#110f06;border-right:2px solid #3a2a0a;padding:12px;overflow-y:auto;display:flex;flex-direction:column;gap:9px;}
+.p-label{font-size:0.82em;color:#5a4020;text-transform:uppercase;letter-spacing:2px;}
+.p-namerow{display:flex;align-items:center;gap:9px;margin-top:5px;}
+.p-badge{width:54px;height:54px;background:#0f0d06;border:1px solid #3a2a0a;display:flex;align-items:center;justify-content:center;font-size:2.4em;border-radius:3px;flex-shrink:0;}
+.p-name{font-size:1.25em;color:#e8c97e;}
+.p-type{font-size:0.82em;color:#7a6030;margin-top:2px;}
+.diff-row{display:flex;align-items:center;gap:6px;margin-top:3px;}
+.diff-pip{font-size:0.75em;letter-spacing:1px;}
+.diff-1{color:#5a8040;} .diff-2{color:#c8a040;} .diff-3{color:#cc5533;}
+.diff-lbl{font-size:0.7em;color:#4a3a1a;}
+.p-appear{font-size:0.84em;line-height:1.85;color:#a08040;}
+.p-complaint{padding:9px 11px;background:#130f00;border-left:3px solid #8b6914;font-size:0.84em;color:#c8a96e;font-style:italic;line-height:1.75;}
+
+/* CENTER */
+.d-panel{background:#0e0c06;border-right:2px solid #3a2a0a;display:flex;flex-direction:column;overflow:hidden;}
+
+/* CLINIC SCENE */
+.clinic-scene{height:255px;flex-shrink:0;position:relative;overflow:hidden;background:linear-gradient(180deg,#c4aa78 0%,#b89060 62%,#7a5820 62%,#6a4a18 100%);}
+.clinic-scene::after{content:'';position:absolute;left:0;right:0;bottom:38%;height:3px;background:#5a3a10;}
+.cabinet{position:absolute;left:8px;top:8px;width:86px;height:150px;background:#3e2008;border:3px solid #22100a;display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(5,1fr);gap:3px;padding:4px;}
+.cab-drawer{background:#62320e;border:1px solid #22100a;border-radius:1px;position:relative;}
+.cab-drawer::after{content:'';position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:5px;height:5px;background:#c8a060;border-radius:50%;}
+.cabinet-sign{position:absolute;bottom:-20px;left:0;right:0;text-align:center;font-size:0.56em;color:#8a6030;letter-spacing:1px;}
+.deco{position:absolute;font-size:1.4em;line-height:1;user-select:none;}
+.clinic-window{position:absolute;right:10px;top:10px;width:72px;height:90px;background:linear-gradient(180deg,#9ac8dc 0%,#c0e0ee 55%,#90b878 55%,#60883a 100%);border:4px solid #3e2008;overflow:hidden;}
+.clinic-window::before{content:'';position:absolute;top:0;bottom:0;left:50%;width:3px;background:#3e2008;transform:translateX(-50%);}
+.clinic-window::after{content:'';position:absolute;left:0;right:0;top:54%;height:3px;background:#3e2008;}
+.treat-chair{position:absolute;bottom:38%;left:50%;transform:translateX(-50%);width:96px;height:72px;}
+.ch-back{position:absolute;left:0;bottom:15px;width:26px;height:50px;background:#2a587a;border:2px solid #1a3858;border-radius:3px 3px 0 0;}
+.ch-seat{position:absolute;left:0;bottom:15px;width:82px;height:18px;background:#2a587a;border:2px solid #1a3858;border-radius:3px;}
+.ch-leg{position:absolute;bottom:0;width:5px;height:15px;background:#1a3858;border-radius:2px;}
+.ch-leg.l{left:10px;}.ch-leg.r{left:66px;}
+.pt-char{position:absolute;bottom:calc(38% + 30px);left:50%;transform:translateX(-50%);font-size:3.8em;line-height:1;transform-origin:bottom center;user-select:none;opacity:0;display:inline-block;}
+.pt-expr{position:absolute;top:-4px;right:-16px;font-size:0.45em;line-height:1;opacity:0;transition:opacity .25s;}
+.pt-expr.vis{opacity:1;}
+.react-bubble{position:absolute;top:8px;left:50%;transform:translateX(-50%);background:rgba(8,6,1,.9);border:1px solid #8b6914;color:#e8c97e;padding:7px 15px;font-size:0.73em;border-radius:2px;max-width:230px;text-align:center;line-height:1.6;opacity:0;transition:opacity .35s;pointer-events:none;z-index:20;white-space:pre-wrap;}
+.react-bubble.vis{opacity:1;}
+.tension-vfx{position:absolute;inset:0;background:rgba(0,0,0,0);transition:background .4s;pointer-events:none;z-index:10;}
+.tension-vfx.on{background:rgba(0,0,0,.55);}
+
+/* CHARACTER ANIMATIONS */
+@keyframes enterSit{0%{transform:translateX(-50%) translateY(-55px) scale(.35);opacity:0;}68%{transform:translateX(-50%) translateY(5px) scale(1.06);opacity:1;}100%{transform:translateX(-50%) translateY(0) scale(1);opacity:1;}}
+@keyframes charNod{0%,100%{transform:translateX(-50%) rotate(0);}22%{transform:translateX(-50%) rotate(-9deg);}44%{transform:translateX(-50%) rotate(5deg);}66%{transform:translateX(-50%) rotate(-5deg);}88%{transform:translateX(-50%) rotate(2deg);}}
+@keyframes charBounce{0%,100%{transform:translateX(-50%) translateY(0) scale(1);}22%{transform:translateX(-50%) translateY(-26px) scale(1.12);}44%{transform:translateX(-50%) translateY(0) scale(.94);}66%{transform:translateX(-50%) translateY(-14px) scale(1.06);}88%{transform:translateX(-50%) translateY(0) scale(1);}}
+@keyframes charShake{0%,100%{transform:translateX(-50%);}10%,30%,50%,70%,90%{transform:translateX(calc(-50% + 10px)) rotate(4deg);}20%,40%,60%,80%{transform:translateX(calc(-50% - 10px)) rotate(-4deg);}}
+@keyframes charShakeHard{0%,100%{transform:translateX(-50%);}8%,24%,40%,56%,72%,88%{transform:translateX(calc(-50% + 16px)) rotate(7deg);}16%,32%,48%,64%,80%{transform:translateX(calc(-50% - 16px)) rotate(-7deg);}}
+@keyframes charDroop{0%{transform:translateX(-50%) translateY(0) scale(1);filter:brightness(1) saturate(1);}100%{transform:translateX(-50%) translateY(16px) scale(.86);filter:brightness(.45) saturate(.18) hue-rotate(200deg);}}
+@keyframes charShrinkSob{0%{transform:translateX(-50%) scale(1) translateY(0);}28%{transform:translateX(-50%) scale(.68) translateY(11px);}38%{transform:translateX(calc(-50% + 4px)) scale(.68) translateY(11px);}48%{transform:translateX(calc(-50% - 4px)) scale(.67) translateY(12px);}58%{transform:translateX(calc(-50% + 4px)) scale(.68) translateY(11px);}68%{transform:translateX(calc(-50% - 4px)) scale(.67) translateY(12px);}100%{transform:translateX(-50%) scale(.68) translateY(11px);}}
+@keyframes charExit{0%{transform:translateX(-50%) scale(1);opacity:1;}100%{transform:translateX(160px) scale(.4);opacity:0;}}
+@keyframes charExitStorm{0%{transform:translateX(-50%) scale(1) rotate(0);opacity:1;}25%{transform:translateX(calc(-50% + 24px)) scale(1.1) rotate(8deg);}50%{transform:translateX(calc(-50% - 12px)) scale(1.05) rotate(-4deg);}100%{transform:translateX(200px) rotate(25deg) scale(.25);opacity:0;}}
+
+/* DIALOGUE */
+.d-header{background:#131007;border-bottom:1px solid #3a2a0a;padding:7px 13px;font-size:0.8em;color:#5a4020;text-transform:uppercase;letter-spacing:2px;flex-shrink:0;}
+.d-log{flex:1;overflow-y:auto;padding:10px;display:flex;flex-direction:column;gap:8px;min-height:0;}
+.d-hint{color:#3a2a0a;font-size:0.86em;font-style:italic;}
+.d-entry{display:flex;flex-direction:column;gap:5px;}
+.d-q{font-size:0.88em;color:#5a8a30;padding:6px 10px;background:#0b1007;border-left:2px solid #3a5a20;}
+.d-a{font-size:0.9em;color:#a89040;padding:6px 10px;background:#120f05;border-left:2px solid #7a6020;line-height:1.75;}
+.q-area{padding:8px 12px;border-top:1px solid #3a2a0a;display:flex;flex-direction:column;gap:6px;flex-shrink:0;}
+.q-btn{background:#130f00;color:#907830;border:1px solid #3a2a0a;padding:9px 11px;font-size:0.87em;font-family:'Courier New',monospace;cursor:pointer;text-align:left;transition:all .15s;}
+.q-btn:hover:not(:disabled){background:#1f1900;border-color:#7a6020;color:#c8a96e;}
+.q-btn:disabled{opacity:.32;cursor:not-allowed;}
+
+/* RIGHT PANEL - PRESCRIPTION */
+.rx-panel{background:#0d0c05;padding:11px;overflow-y:auto;display:flex;flex-direction:column;gap:10px;}
+.rx-header{font-size:0.8em;color:#5a4020;text-transform:uppercase;letter-spacing:2px;border-bottom:1px solid #3a2a0a;padding-bottom:6px;}
+.rx-sec{font-size:0.82em;color:#7a6030;text-transform:uppercase;letter-spacing:1px;margin-bottom:5px;}
+.const-opts{display:flex;flex-direction:column;gap:5px;}
+.c-btn{background:#120f00;color:#907840;border:1px solid #2a1f08;padding:9px 10px;font-size:0.87em;font-family:'Courier New',monospace;cursor:pointer;text-align:left;transition:all .15s;display:flex;align-items:center;gap:7px;}
+.c-btn:hover{background:#1e1900;border-color:#5a4515;}
+.c-btn.sel{background:#1e1800;border-color:#c8a96e;color:#e8c97e;}
+.c-dot{width:10px;height:10px;border:2px solid currentColor;border-radius:50%;flex-shrink:0;}
+.c-btn.sel .c-dot{background:currentColor;}
+
+/* PRESCRIPTION SLOT */
+.rx-slot-sec{font-size:0.82em;color:#7a6030;text-transform:uppercase;letter-spacing:1px;margin-bottom:5px;display:flex;align-items:center;gap:6px;}
+.rx-slot-count{font-size:0.75em;color:#4a3a1a;font-style:italic;}
+.rx-slot-wrap{border:1px dashed #2e2208;background:#0a0900;padding:6px;min-height:42px;margin-bottom:7px;display:flex;flex-wrap:wrap;gap:5px;align-items:center;}
+.rx-slot-hint{font-size:0.75em;color:#2e1f08;font-style:italic;align-self:center;}
+.rx-item{display:flex;align-items:center;gap:4px;background:#1e1800;border:1px solid #7a5a14;padding:3px 8px;font-size:0.76em;color:#e8c97e;cursor:pointer;transition:background .1s;border-radius:1px;}
+.rx-item:hover{background:#3a1200;border-color:#cc4422;}
+.rx-item-x{color:#5a3a10;font-size:0.7em;margin-left:2px;}
+
+/* FOOD CARD GRID */
+.food-cards-label{font-size:0.75em;color:#3a2a0a;letter-spacing:1px;margin-bottom:4px;}
+.food-grid{display:grid;grid-template-columns:1fr 1fr;gap:5px;}
+.food-card{display:flex;flex-direction:column;align-items:center;justify-content:center;padding:7px 4px;background:#110e05;border:1px solid #261c06;cursor:pointer;transition:all .12s;gap:3px;border-radius:1px;}
+.food-card:hover:not(.maxed){border-color:#4a3510;background:#191408;}
+.food-card.sel{border:2px solid #b89040;background:#1a1400;}
+.food-card.maxed:not(.sel){opacity:.38;cursor:not-allowed;}
+.card-icon{font-size:1.55em;line-height:1;}
+.card-name{font-size:0.68em;color:#706030;text-align:center;line-height:1.3;}
+.food-card.sel .card-name{color:#d8b85e;}
+/* allergy warning badge on card */
+.food-card .allergy-warn{display:none;font-size:0.55em;color:#cc4422;letter-spacing:0;}
+
+.submit-btn{background:#1e1800;color:#c8a96e;border:2px solid #8b6914;padding:12px;font-size:0.95em;font-family:'Courier New',monospace;cursor:pointer;letter-spacing:2px;margin-top:auto;transition:all .2s;flex-shrink:0;}
+.submit-btn:hover:not(:disabled){background:#8b6914;color:#0d0b07;}
+.submit-btn:disabled{opacity:.35;cursor:not-allowed;border-color:#3a2a0a;}
+
+/* RESULT OVERLAY */
+#result-overlay{position:fixed;inset:0;background:rgba(0,0,0,.87);display:flex;align-items:center;justify-content:center;z-index:100;}
+.r-box{background:#131007;border:3px solid #4a3a1a;padding:26px 36px;max-width:560px;width:94%;text-align:center;}
+.r-icon{font-size:2.8em;margin-bottom:8px;}
+.r-title{font-size:1.45em;margin-bottom:10px;letter-spacing:2px;}
+.r-perfect .r-title{color:#7ab87a;} .r-perfect{border-color:#3a6a3a;}
+.r-partial .r-title{color:#c8a040;} .r-partial{border-color:#6a5a1a;}
+.r-bad .r-title{color:#cc7040;} .r-bad{border-color:#7a3a1a;}
+.r-dead .r-title{color:#cc2200;} .r-dead{border-color:#8a1500;}
+.r-detail{font-size:0.9em;color:#907840;line-height:1.85;margin-bottom:10px;}
+.r-answer{font-size:0.86em;color:#5a8040;background:#0b120a;border:1px solid #2a4a1a;padding:10px;margin-bottom:14px;text-align:left;line-height:1.9;}
+.r-fail-reason{font-size:0.83em;color:#cc5533;background:#120500;border:1px solid #4a1a0a;padding:8px 10px;margin-bottom:12px;text-align:left;line-height:1.8;}
+.btn-next{background:#1a1500;color:#c8a96e;border:1px solid #8b6914;padding:11px 34px;font-size:0.98em;font-family:'Courier New',monospace;cursor:pointer;letter-spacing:2px;}
+.btn-next:hover{background:#8b6914;color:#0d0b07;}
+
+/* EVENT */
+#event-overlay{position:fixed;inset:0;background:rgba(0,0,0,.92);display:flex;align-items:center;justify-content:center;z-index:200;}
+.ev-box{background:#130800;border:3px solid #aa2200;padding:30px;max-width:510px;width:92%;text-align:center;}
+.ev-title{font-size:1.35em;color:#cc4422;margin-bottom:10px;letter-spacing:2px;}
+.ev-text{font-size:0.9em;color:#a06040;line-height:1.95;margin-bottom:20px;white-space:pre-line;}
+
+/* REF */
+#ref-popup{position:fixed;inset:0;background:rgba(0,0,0,.9);display:flex;align-items:center;justify-content:center;z-index:300;}
+.ref-box{background:#111008;border:2px solid #4a3a1a;padding:24px;max-width:640px;width:95%;max-height:90vh;overflow-y:auto;}
+.ref-title{font-size:1.1em;color:#e8c97e;letter-spacing:2px;border-bottom:1px solid #3a2a0a;padding-bottom:8px;margin-bottom:14px;}
+.ref-const{margin-bottom:14px;}
+.ref-cname{font-size:0.98em;color:#c8a96e;margin-bottom:4px;}
+.ref-cdesc{font-size:0.87em;color:#7a6030;line-height:1.85;}
+.ref-foods{font-size:0.85em;color:#5a8040;margin-top:4px;}
+.ref-close{background:none;border:1px solid #4a3a1a;color:#7a6030;padding:8px 24px;font-family:'Courier New',monospace;font-size:0.9em;cursor:pointer;margin-top:8px;}
+.ref-close:hover{border-color:#8b6914;color:#c8a96e;}
+
+/* GAMEOVER / VICTORY */
+#gameover-screen{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;background:#030200;text-align:center;padding:24px;}
+.go-title{font-size:2.4em;color:#cc1100;letter-spacing:4px;margin-bottom:14px;text-shadow:0 0 25px #660000;}
+.go-photo{width:230px;height:230px;object-fit:cover;border:4px solid #aa1100;border-radius:4px;margin-bottom:14px;}
+.go-story{font-size:0.98em;color:#704030;max-width:460px;line-height:2;margin-bottom:16px;}
+.stats-box{background:#0f0500;border:1px solid #3a1a0a;padding:16px 26px;margin-bottom:16px;min-width:290px;text-align:left;}
+.stat-row{display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid #1e0e05;font-size:0.98em;}
+.s-lbl{color:#604030;} .s-val{color:#c8a96e;}
+#victory-screen{display:flex;flex-direction:column;align-items:center;justify-content:center;min-height:100vh;background:#030503;text-align:center;padding:24px;}
+.vic-title{font-size:2.4em;color:#7ab87a;letter-spacing:4px;margin-bottom:14px;text-shadow:0 0 25px #2a6a2a;}
+.vic-photo{width:230px;height:230px;object-fit:cover;border:4px solid #5a9a5a;border-radius:4px;margin-bottom:14px;}
+.vic-story{font-size:0.98em;color:#4a7040;max-width:460px;line-height:2;margin-bottom:16px;}
+.hidden{display:none!important;}
+</style>
+</head>
+<body>
+
+<!-- TITLE -->
+<div id="title-screen">
+  <img src="홍영주 할머니.jpg" class="title-photo" alt="홍영주" onerror="this.style.display='none'">
+  <div class="title-main">체질왕 홍영주</div>
+  <div class="title-sub">사상체질 진료소 시뮬레이션</div>
+  <div class="title-desc">
+    "저는 사상의학 전문가 홍영주입니다."<br><br>
+    손님의 외형과 말을 관찰하여 <b>체질을 진단</b>하고<br>
+    <b>2~3가지 음식</b>을 골라 처방전을 조합하세요.<br><br>
+    깊은 문진일수록 숨겨진 <span style="color:#cc8040">알레르기·금기·상극</span> 정보가 드러납니다.<br>
+    오진이 쌓이면 <span style="color:#cc4422">의심도</span>가 올라갑니다.
+  </div>
+  <button class="btn-main" onclick="startGame()">▶ 진료 시작</button>
+  <button class="btn-main" onclick="showRef()">📖 체질 참고서</button>
+</div>
+
+<!-- HUD -->
+<div id="hud" class="hidden">
+  <div class="hud-title">홍영주 체질진료소</div>
+  <div class="hud-day" id="hud-day">1일차</div>
+  <div class="sus-wrap">
+    <div class="sus-label">의심도</div>
+    <div class="sus-bar"><div class="sus-fill" id="sus-fill" style="width:0%"></div></div>
+    <div class="sus-pct" id="sus-pct">0%</div>
+  </div>
+  <div class="rep-display" id="rep-disp">명성: 0</div>
+  <button class="ref-btn" onclick="showRef()">📖 참고서</button>
+</div>
+
+<!-- GAME -->
+<div id="game-screen" class="hidden">
+
+  <!-- LEFT -->
+  <div class="p-panel">
+    <div>
+      <div class="p-label">— 내방 손님 —</div>
+      <div class="p-namerow">
+        <div class="p-badge" id="pt-badge">👤</div>
+        <div>
+          <div class="p-name" id="pt-name"></div>
+          <div class="p-type" id="pt-type"></div>
+          <div class="diff-row" id="pt-diff"></div>
+        </div>
+      </div>
+    </div>
+    <div class="p-appear" id="pt-appear"></div>
+    <div class="p-complaint" id="pt-complaint"></div>
+  </div>
+
+  <!-- CENTER -->
+  <div class="d-panel">
+    <div class="clinic-scene">
+      <div class="cabinet" id="cabinet"><div class="cabinet-sign">약장</div></div>
+      <span class="deco" style="left:102px;top:18px">🫙</span>
+      <span class="deco" style="left:100px;top:52px">🌿</span>
+      <span class="deco" style="left:106px;top:82px">⚗️</span>
+      <div class="clinic-window"></div>
+      <span style="position:absolute;right:18px;top:74px;font-size:.82em;opacity:.6">🌿</span>
+      <div class="treat-chair">
+        <div class="ch-back"></div>
+        <div class="ch-seat"></div>
+        <div class="ch-leg l"></div>
+        <div class="ch-leg r"></div>
+      </div>
+      <div class="pt-char" id="pt-char">
+        <span id="pt-main-emoji">👤</span><span class="pt-expr" id="pt-expr"></span>
+      </div>
+      <div class="react-bubble" id="react-bubble"></div>
+      <div class="tension-vfx" id="tension-vfx"></div>
+    </div>
+    <div class="d-header">— 진료 대화 —</div>
+    <div class="d-log" id="d-log"><div class="d-hint">손님에게 질문하여 단서를 수집하세요. 깊이 파고들수록 금기·상극 정보가 드러납니다.</div></div>
+    <div class="q-area" id="q-area"></div>
+  </div>
+
+  <!-- RIGHT -->
+  <div class="rx-panel">
+    <div class="rx-header">— 처방전 —</div>
+
+    <div>
+      <div class="rx-sec">1. 체질 진단</div>
+      <div class="const-opts">
+        <button class="c-btn" onclick="pickConst('태양인')" id="c-태양인"><span class="c-dot"></span>🔵 태양인 (太陽人)</button>
+        <button class="c-btn" onclick="pickConst('태음인')" id="c-태음인"><span class="c-dot"></span>🟤 태음인 (太陰人)</button>
+        <button class="c-btn" onclick="pickConst('소양인')" id="c-소양인"><span class="c-dot"></span>🟡 소양인 (少陽人)</button>
+        <button class="c-btn" onclick="pickConst('소음인')" id="c-소음인"><span class="c-dot"></span>🟢 소음인 (少陰人)</button>
+      </div>
+    </div>
+
+    <div>
+      <div class="rx-slot-sec">2. 처방전 <span class="rx-slot-count">(2~3가지 선택)</span></div>
+      <div class="rx-slot-wrap" id="rx-slot-wrap">
+        <span class="rx-slot-hint">아래 식품 카드를 선택하세요</span>
+      </div>
+      <div class="food-cards-label">─ 식품 카드 ─</div>
+      <div class="food-grid" id="food-grid"></div>
+    </div>
+
+    <button class="submit-btn" id="sub-btn" onclick="submit()" disabled>📋 처방 확정</button>
+  </div>
+</div>
+
+<!-- RESULT -->
+<div id="result-overlay" class="hidden">
+  <div class="r-box" id="r-box">
+    <div class="r-icon" id="r-icon"></div>
+    <div class="r-title" id="r-title"></div>
+    <div class="r-detail" id="r-detail"></div>
+    <div class="r-fail-reason hidden" id="r-fail"></div>
+    <div class="r-answer" id="r-answer"></div>
+    <button class="btn-next" onclick="nextPt()">다음 손님 →</button>
+  </div>
+</div>
+
+<!-- EVENT -->
+<div id="event-overlay" class="hidden">
+  <div class="ev-box">
+    <div class="ev-title" id="ev-title"></div>
+    <div class="ev-text" id="ev-text"></div>
+    <button class="btn-next" onclick="closeEvent()">확인</button>
+  </div>
+</div>
+
+<!-- REF -->
+<div id="ref-popup" class="hidden">
+  <div class="ref-box">
+    <div class="ref-title">📖 사상체질 참고서</div>
+    <div class="ref-const">
+      <div class="ref-cname">🔵 태양인 (太陽人) — 폐 강함, 간 약함</div>
+      <div class="ref-cdesc">머리가 크고 목덜미·어깨가 발달. 하체가 약함. 눈빛이 강하고 형형함. 말투가 단호하고 결단력 있음.</div>
+      <div class="ref-foods">✅ 좋은 음식: 메밀, 새우, 게, 전복, 조개류, 포도, 머루, 다래, 감, 모과</div>
+    </div>
+    <div class="ref-const">
+      <div class="ref-cname">🟤 태음인 (太陰人) — 간 강함, 폐 약함</div>
+      <div class="ref-cdesc">체격이 크고 골격이 굵음. 살이 찌기 쉬움. 허리 발달. 땀을 많이 흘림. 느긋하고 신중한 말투.</div>
+      <div class="ref-foods">✅ 좋은 음식: 소고기, 우유, 콩(두부), 무, 도라지, 더덕, 율무, 밤, 배, 잣</div>
+    </div>
+    <div class="ref-const">
+      <div class="ref-cname">🟡 소양인 (少陽人) — 비장 강함, 신장 약함</div>
+      <div class="ref-cdesc">가슴·흉곽이 발달. 엉덩이 작음. 다리 가늘고 약함. 말이 빠르고 직설적. 다혈질.</div>
+      <div class="ref-foods">✅ 좋은 음식: 돼지고기, 해삼, 굴, 게, 오이, 배추, 수박, 참외, 딸기, 보리</div>
+    </div>
+    <div class="ref-const">
+      <div class="ref-cname">🟢 소음인 (少陰人) — 신장 강함, 비장 약함</div>
+      <div class="ref-cdesc">체격이 작고 마름. 엉덩이 발달. 손발이 차가움. 추위를 잘 탐. 조용하고 소심한 말투.</div>
+      <div class="ref-foods">✅ 좋은 음식: 닭고기, 인삼, 생강, 찹쌀, 명태, 사과, 귤, 꿀, 대추</div>
+    </div>
+    <p style="font-size:.82em;color:#4a3a1a;margin-top:8px;line-height:1.7">※ 깊은 문진을 해야 알레르기·금기·상극 정보가 드러납니다. 체질만 맞춰도 부족할 수 있습니다.</p>
+    <button class="ref-close" onclick="closeRef()">닫기</button>
+  </div>
+</div>
+
+<!-- GAMEOVER -->
+<div id="gameover-screen" class="hidden">
+  <div class="go-title">⚖️ 게임 오버 ⚖️</div>
+  <img src="삭발홍영주.png" class="go-photo" alt="삭발 홍영주">
+  <div class="go-story">
+    오진이 쌓이고 쌓여, 결국 형사들이 진료소 문을 두드렸습니다.<br>
+    홍영주 할머니는 삭발을 당한 채 연행되었습니다.<br><br>
+    <em style="color:#4a2a1a">"억울해요... 나는 최선을 다했는데..."</em>
+  </div>
+  <div class="stats-box" id="go-stats"></div>
+  <button class="btn-main" onclick="restart()">↺ 다시 시작</button>
+</div>
+
+<!-- VICTORY -->
+<div id="victory-screen" class="hidden">
+  <div class="vic-title">🏆 체질왕 달성! 🏆</div>
+  <img src="당근마스터 홍영주.png" class="vic-photo" alt="당근마스터 홍영주">
+  <div class="vic-story">
+    홍영주 할머니의 탁월한 진료 덕분에<br>
+    마을 사람들이 모두 건강해졌습니다!<br><br>
+    <em style="color:#3a6a3a">"이 몸이 바로... 체질의 왕이오!"</em>
+  </div>
+  <div class="stats-box" id="vic-stats"></div>
+  <button class="btn-main" onclick="restart()">↺ 다시 하기</button>
+</div>
+
+<script>
+/* ═══════════════════════════════════════════
+   FOOD ICON MAP
+═══════════════════════════════════════════ */
+const FOOD_ICON = {
+  '메밀국수':'🍜','메밀묵':'🍜','메밀전':'🥞','냉면':'🍜','보리냉면':'🍜',
+  '전복죽':'🦪','전복구이':'🦪','게장':'🦀','게찜':'🦀','해삼요리':'🐚',
+  '굴국밥':'🦪','굴전':'🦪','새우볶음':'🦐',
+  '삼겹살구이':'🥓','삼겹살':'🥓','돼지고기쌈':'🥬','돼지고기보쌈':'🥩',
+  '돼지수육':'🥩','돼지고기수육':'🥩','돼지갈비':'🍖',
+  '닭백숙':'🐓','닭인삼탕':'🐓','닭개장':'🍲','닭갈비':'🍗',
+  '닭볶음탕':'🍗','닭가슴살찜':'🍗','닭삼계탕':'🍲',
+  '소고기국밥':'🍲','소고기미역국':'🍲','소고기뭇국':'🍲','소고기스테이크':'🥩',
+  '두부조림':'🫘','두부찌개':'🫘','도라지나물':'🌱','더덕구이':'🌿',
+  '무나물':'🥗','오이냉국':'🥒','오이소박이':'🥒',
+  '율무밥':'🌾','율무죽':'🌾','율무차':'🍵','보리밥':'🍚','보리차':'🍵',
+  '찹쌀죽':'🍚','인삼탕':'🌿','인삼차':'☕','인삼홍삼즙':'🌿','인삼홍삼정':'🌿','인삼꿀차':'☕',
+  '생강탕':'🫖','생강차':'🫖','생강꿀차':'🫖','생강홍삼차':'🫖',
+  '포도주스':'🍇','모과차':'🍵','모과즙':'🍵','머루즙':'🍇',
+  '배즙':'🍐','사과즙':'🍎','사과퓨레':'🍎','귤차':'🍊','꿀물':'🍯',
+  '수박화채':'🍉','수박주스':'🍉','수박':'🍉',
+  '참외':'🍈','딸기':'🍓','감식초':'🍶',
+};
+
+/* ═══════════════════════════════════════════
+   REACTION DATA  (perfect / partial / bad per constitution)
+═══════════════════════════════════════════ */
+const REACTIONS = {
+  '태양인': {
+    perfect: {expr:'😌', anim:'charNod 0.65s ease 3',      line:'"흠... 역시 체질을 아는군.\n인정하지."',         exit:null},
+    partial: {expr:'😐', anim:'charNod 0.9s ease 1',        line:'"...그럭저럭 나아진 것 같군.\n최선은 아니오."',    exit:null},
+    bad:     {expr:'😡', anim:'charShake 0.12s ease 8',     line:'"이 실력으로 진료를 한다고?!\n내 발로 나가겠소!"', exit:'charExitStorm 0.55s ease forwards'},
+  },
+  '태음인': {
+    perfect: {expr:'😊', anim:'charNod 1.0s ease 2',        line:'"으음... 맞는 것 같아요.\n감사합니다."',           exit:null},
+    partial: {expr:'😑', anim:'charNod 1.2s ease 1',        line:'"뭐, 괜찮긴 한데...\n딱 좋진 않네요."',           exit:null},
+    bad:     {expr:'😔', anim:'charDroop 0.9s ease forwards',line:'"...그렇군요.\n알겠습니다..."',                   exit:null, darken:true},
+  },
+  '소양인': {
+    perfect: {expr:'😄', anim:'charBounce 0.65s ease 3',    line:'"오예!! 딱이야!!\n바로 이거라고!!"',              exit:null},
+    partial: {expr:'😒', anim:'charNod 0.7s ease 1',        line:'"...에이. 이게 최선이에요?\n좀 아쉬운데."',       exit:null},
+    bad:     {expr:'🤬', anim:'charShakeHard 0.1s ease 12', line:'"뭐야 이게?! 말도 안 돼!!\n나 간다!!"',           exit:'charExit 0.5s ease forwards'},
+  },
+  '소음인': {
+    perfect: {expr:'🥹', anim:'charNod 0.9s ease 2',        line:'"감사해요...\n정말 다행이에요..."',                exit:null},
+    partial: {expr:'😕', anim:'charNod 0.8s ease 1',        line:'"고맙긴 한데...\n아직 좀 불편한 것 같아요..."',   exit:null},
+    bad:     {expr:'😢', anim:'charShrinkSob 1.1s ease forwards', line:'"훌쩍... 저는...\n그냥 갈게요..."',         exit:null},
+  },
+};
+
+/* ═══════════════════════════════════════════
+   PATIENT DATA
+   fields:
+     difficulty 1-3
+     foods[]      — card pool
+     ok[]         — constitution-appropriate foods
+     bestFoods[]  — optimal for current condition (perfect requires all selections here)
+     allergy[]    — forbidden for THIS patient (revealed via deep Q)
+     incompatible — [[foodA, foodB], ...] bad combos (revealed via deep Q)
+═══════════════════════════════════════════ */
+const PATIENTS = [
+
+/* ── 난이도 1 ──────────────────────────────── */
+{
+  name:"강무결", sub:"결단력의 사나이", type:"인간 남성", emoji:"🧔", con:"태양인", difficulty:1,
+  appear:"머리가 비정상적으로 크고 목덜미가 두껍습니다. 어깨와 가슴이 넓고 당당하지만, 허리 아래 다리는 유독 가늘어 보입니다. 눈빛이 매서워 마주치기 어렵습니다.",
+  complaint:"소화가 안 되오. 뭘 먹어야 하겠소? 빨리 처방해 주시오.",
+  qs:[
+    {q:"평소 어떤 음식을 즐기시나요?",     a:"육류는 별로요. 주저하는 건 체질에 안 맞소. 가볍고 시원한 것을 좋아하오."},
+    {q:"성격이 어떠신가요?",               a:"결정은 빠를수록 좋소! 타협이나 설득 같은 건 질색이라오."},
+  ],
+  foods:['메밀국수','전복죽','삼겹살구이','인삼탕','게장','닭백숙','율무밥'],
+  ok:['메밀국수','전복죽','게장'],
+  bestFoods:['메밀국수','전복죽','게장'],
+  allergy:[], incompatible:[],
+},
+
+{
+  name:"이느긋", sub:"여유의 화신", type:"인간 여성", emoji:"👩‍🦳", con:"태음인", difficulty:1,
+  appear:"체격이 크고 골격이 굵습니다. 살이 찌는 편이며 허리 부위가 발달해 있습니다. 느린 움직임과 여유로운 인상. 이마에 땀이 맺혀 있습니다.",
+  complaint:"요즘 숨이 차고 땀이 너무 많이 나요. 천천히 봐주세요.",
+  qs:[
+    {q:"땀이 많이 나는 편인가요?",         a:"네, 땀을 흘려야 몸이 풀리는 것 같아요. 땀이 안 나면 오히려 불편해요."},
+    {q:"좋아하는 음식이 있나요?",           a:"급할 것 없지요. 소고기나 콩 같은 든든한 거 좋아해요."},
+  ],
+  foods:['소고기국밥','두부조림','메밀국수','돼지고기쌈','율무죽','닭인삼탕','배즙'],
+  ok:['소고기국밥','두부조림','율무죽','배즙'],
+  bestFoods:['소고기국밥','두부조림','율무죽','배즙'],
+  allergy:[], incompatible:[],
+},
+
+/* ── 난이도 2 ──────────────────────────────── */
+{
+  name:"박다혈", sub:"분노의 화산", type:"인간 남성", emoji:"😤", con:"소양인", difficulty:2,
+  appear:"가슴과 흉곽이 발달하여 어깨가 넓지만, 엉덩이가 작고 다리가 가늘어 위아래가 불균형합니다. 얼굴이 붉고 눈이 충혈되어 있습니다.",
+  complaint:"왜 이렇게 몸이 뜨거운 거요! 빨리빨리 좀 해요!",
+  qs:[
+    {q:"어떤 증상이신가요?",               a:"몸에 열이 넘치고 입이 마릅니다! 빨리 해요!"},
+    {q:"성격이 급하신가요?",               a:"당연하죠! 빨리빨리가 체질이에요. 느려터진 건 못 봐줘요."},
+    {q:"혹시 못 드시는 음식이 있나요?",   a:"인삼이나 홍삼은 먹으면 더 뜨거워져서 절대 못 먹어요! 완전 금기입니다!"},
+  ],
+  foods:['수박화채','돼지고기보쌈','오이냉국','인삼홍삼즙','보리밥','닭갈비','해삼요리'],
+  ok:['수박화채','돼지고기보쌈','오이냉국','보리밥','해삼요리'],
+  bestFoods:['수박화채','오이냉국','해삼요리'],
+  allergy:['인삼홍삼즙'], incompatible:[],
+},
+
+{
+  name:"최소심", sub:"차가운 걱정쟁이", type:"인간 여성", emoji:"🥶", con:"소음인", difficulty:2,
+  appear:"체격이 작고 마른 편입니다. 가슴이 좁고 엉덩이가 상대적으로 발달해 보입니다. 손을 내밀자 차갑게 느껴집니다. 목소리가 작고 조심스럽습니다.",
+  complaint:"저... 배가 차갑고 소화가 안 되는데... 괜찮을까요?",
+  qs:[
+    {q:"손발이 차가운 편인가요?",           a:"네... 항상 차가워요. 여름에도 손발이 시려워서 걱정이에요."},
+    {q:"어떤 음식이 당기시나요?",           a:"속이 냉해서 따뜻한 게 좋아요. 찬 것 먹으면 배가 아파요..."},
+    {q:"수박이나 차가운 음료는 드시나요?", a:"수박은 정말 못 먹어요. 조금만 먹어도 바로 배탈이 나요..."},
+  ],
+  foods:['닭백숙','인삼차','수박화채','생강탕','메밀국수','찹쌀죽','돼지수육'],
+  ok:['닭백숙','인삼차','생강탕','찹쌀죽'],
+  bestFoods:['닭백숙','생강탕','찹쌀죽'],
+  allergy:['수박화채'], incompatible:[],
+},
+
+{
+  name:"에아렐", sub:"숲의 엘프 선지자", type:"엘프족", emoji:"🧝", con:"태양인", difficulty:2,
+  appear:"뾰족한 귀를 가진 엘프입니다. 이마와 머리가 유독 크고 발달했으며, 어깨가 넓고 당당합니다. 그에 비해 하체는 가늘고 약해 보입니다. 눈빛이 형형합니다.",
+  complaint:"간이 좋지 않아 숲을 헤매다 왔노라. 빠른 처방을 바라오.",
+  qs:[
+    {q:"식사 습관이 어떻습니까?",           a:"육류는 피하고 열매와 해산물을 즐기오. 결단이 빠른 것이 우리 종족의 장점이오."},
+    {q:"체력은 어떻습니까?",               a:"상체는 강하나 장시간 걷기가 힘드오. 하체가 빨리 지치더군."},
+    {q:"인삼탕이 도움이 될까요?",          a:"인삼은 오히려 독이오. 우리 종족엔 맞지 않아 더 나빠진다오. 절대 금기요."},
+  ],
+  foods:['포도주스','모과차','소고기스테이크','전복구이','인삼탕','머루즙','돼지갈비'],
+  ok:['포도주스','모과차','전복구이','머루즙'],
+  bestFoods:['포도주스','전복구이','머루즙'],
+  allergy:['인삼탕'], incompatible:[],
+},
+
+{
+  name:"모래별 아르키", sub:"은하계 여행자", type:"외계 생명체", emoji:"👽", con:"태음인", difficulty:2,
+  appear:"녹색 피부에 큰 눈을 가진 외계인입니다. 체격이 크고 묵직하며, 허리 부위가 두텁게 발달해 있습니다. 느릿느릿 움직이며 신중해 보입니다.",
+  complaint:"흠... 은하계 항해 중 소화기관에 문제가 생겼소. 천천히 봐주시오.",
+  qs:[
+    {q:"지구 음식은 잘 맞으신가요?",       a:"콩류와 뿌리채소를 먹으면 소화가 잘 되더군요. 땀을 흘려야 몸이 좋아집니다."},
+    {q:"평소 식욕이 어떠신가요?",           a:"먹는 걸 좋아하고 살도 잘 찌는 편이오. 인내심은 강하답니다."},
+    {q:"못 드시는 지구 음식이 있나요?",    a:"메밀류는... 우리 외계 소화기관이 처리를 못 합니다. 먹으면 매우 위험해요."},
+  ],
+  foods:['도라지나물','두부찌개','수박주스','소고기미역국','닭인삼탕','율무차','메밀묵'],
+  ok:['도라지나물','두부찌개','소고기미역국','율무차'],
+  bestFoods:['도라지나물','소고기미역국','율무차'],
+  allergy:['메밀묵'], incompatible:[],
+},
+
+/* ── 난이도 3 ──────────────────────────────── */
+{
+  name:"달토끼 솜이", sub:"달빛 수인", type:"수인족 (토끼)", emoji:"🐰", con:"소음인", difficulty:3,
+  appear:"흰 털을 가진 작은 토끼 수인입니다. 체구가 작고 야위어 보이며 귀가 축 처져 있습니다. 손발을 만져보니 차갑습니다. 매우 수줍어하며 눈을 잘 못 마주칩니다.",
+  complaint:"저... 감기가 자주 걸리고 배가 차가워요... 죄송해요, 말하기가 좀 민망해서요...",
+  qs:[
+    {q:"몸이 자주 차가운가요?",             a:"네... 항상 추운 것 같아요. 다른 수인들은 괜찮다는데 저만 유독..."},
+    {q:"좋아하는 음식이 있나요?",           a:"따뜻한 거요... 차가운 거 먹으면 금방 배가 아파요."},
+    {q:"냉면 같은 차가운 음식은 드시나요?",a:"냉면은... 먹으면 배가 뒤틀려요. 차가운 건 정말 못 먹어요... 금기예요."},
+    {q:"귤차와 꿀물을 같이 드신 적 있나요?",a:"아... 그 두 개 같이 먹으면 속이 이상해요. 따로따로는 괜찮은데 같이 먹으면 안 돼요."},
+  ],
+  foods:['귤차','닭개장','돼지수육','꿀물','냉면','사과즙','메밀전'],
+  ok:['귤차','닭개장','꿀물','사과즙'],
+  bestFoods:['귤차','닭개장','사과즙'],
+  allergy:['냉면'], incompatible:[['귤차','꿀물']],
+},
+
+{
+  name:"불꽃 도깨비", sub:"화끈한 저승사자 알바생", type:"도깨비", emoji:"👹", con:"소양인", difficulty:3,
+  appear:"빨간 도깨비로 몸에서 열기가 뿜어져 나옵니다. 가슴과 어깨가 발달했지만 허리 아래는 좁습니다. 말이 빠르고 눈이 충혈되어 있습니다.",
+  complaint:"야! 빨리빨리! 저승 알바 때문에 바쁘다고! 뭘 먹어야 이 열이 내려가냐!",
+  qs:[
+    {q:"어디가 불편하신가요?",             a:"몸이 너무 뜨겁다고! 항상 열이 나고 입이 바짝 마른다고!"},
+    {q:"성격이 급하신가요?",               a:"당연하지! 저승에서도 제일 빠르기로 유명해! 느린 거 진짜 못 봐줘!"},
+    {q:"생강이나 꿀 같은 따뜻한 음식은요?",a:"생강꿀차는 먹으면 더 뜨거워진다고!! 완전 금지야! 절대 안 돼!!"},
+    {q:"삼겹살이랑 참외 같이 드실 수 있나요?",a:"그 조합?! 저번에 먹었다가 저승 일도 못 갈 뻔 했어! 절대 같이 먹으면 안 된다고!!"},
+  ],
+  foods:['굴국밥','삼겹살','보리냉면','인삼홍삼정','오이소박이','생강꿀차','참외'],
+  ok:['굴국밥','보리냉면','오이소박이','참외'],
+  bestFoods:['굴국밥','오이소박이','참외'],
+  allergy:['생강꿀차'], incompatible:[['삼겹살','참외']],
+},
+
+{
+  name:"하빛", sub:"무술도장 사범", type:"인간 여성", emoji:"🥋", con:"태양인", difficulty:3,
+  appear:"머리가 크고 눈빛이 날카롭습니다. 어깨와 가슴이 발달했지만 다리가 의외로 가늘고 약해 보입니다. 말투가 단호하고 직선적입니다.",
+  complaint:"수련 중 소화가 계속 안 되오. 결정이 빠른 내가 여기 오기까지 꽤 걸렸소.",
+  qs:[
+    {q:"어떤 음식을 즐기시나요?",           a:"육류보다는 가벼운 해산물이 좋소. 무거운 음식은 질색이오."},
+    {q:"건강 문제가 자주 있나요?",          a:"다리가 약한 게 콤플렉스요. 소화기도 자주 탈이 나오."},
+    {q:"닭볶음탕 같은 매운 음식은요?",     a:"닭볶음탕은 먹으면 속이 더 나빠지오. 닭고기 자체가 소화에 안 맞는 것 같소."},
+    {q:"새우볶음에 식초를 같이 드시나요?", a:"그 조합은... 먹을 때마다 배가 아프오. 따로따로는 괜찮은데 같이는 절대 안 되오."},
+  ],
+  foods:['새우볶음','감식초','소고기국밥','모과즙','인삼꿀차','게찜','닭볶음탕'],
+  ok:['새우볶음','감식초','모과즙','게찜'],
+  bestFoods:['모과즙','게찜','감식초'],
+  allergy:['닭볶음탕'], incompatible:[['새우볶음','감식초']],
+},
+
+{
+  name:"안수구", sub:"전직 교사, 현직 건강마니아", type:"인간 남성 (중년)", emoji:"👨‍🏫", con:"태음인", difficulty:3,
+  appear:"중년의 남성으로 체격이 크고 허리가 두텁습니다. 전반적으로 살이 오른 편이며, 얼굴이 둥글고 여유있어 보입니다. 이마에 땀이 살짝 맺혀 있습니다.",
+  complaint:"요즘 폐가 좀 약해진 것 같아서요. 천천히 상담해봅시다.",
+  qs:[
+    {q:"평소 식습관이 어떠세요?",           a:"소고기나 두부 같은 거 즐겨 먹어요. 땀을 흘리고 나면 몸이 훨씬 개운해요."},
+    {q:"체형적 특징이 있으신가요?",         a:"예전엔 날씬했는데... 허리 쪽이 많이 굵어졌어요. 뭐든 꾸준히 하는 편이에요."},
+    {q:"삼계탕 같은 보양식은 어떠세요?",   a:"삼계탕은 오히려 열이 나고 불편해요. 제 몸엔 잘 안 맞는 것 같아요."},
+    {q:"율무밥 먹을 때 시원한 음식도요?",  a:"율무밥 먹을 때 수박 같은 시원한 것 같이 먹으면 폐가 더 약해지는 느낌이에요."},
+  ],
+  foods:['더덕구이','율무밥','닭삼계탕','소고기뭇국','수박화채','무나물','메밀전'],
+  ok:['더덕구이','율무밥','소고기뭇국','무나물'],
+  bestFoods:['더덕구이','무나물','소고기뭇국'],
+  allergy:['닭삼계탕'], incompatible:[['율무밥','수박화채']],
+},
+
+{
+  name:"박기춘", sub:"인생역전을 꿈꾸는 노숙자", type:"인간 남성", emoji:"🧣", con:"소양인", difficulty:3,
+  appear:"허름한 옷을 입은 중년 남성입니다. 가슴팍이 넓고 벌어져 있지만, 엉덩이와 다리는 가늘어 위아래가 불균형합니다. 눈빛이 날카롭고 말이 빠릅니다.",
+  complaint:"야 빨리요! 몸에 열이 나고 입이 마른다고요! 빨리빨리요!",
+  qs:[
+    {q:"어디가 주로 불편하세요?",           a:"몸에 열이 너무 많아! 차갑고 시원한 거 먹어야 살 것 같아."},
+    {q:"평소 식성이 어떠세요?",             a:"돼지고기나 해산물 같은 거 좋아해요. 차갑고 시원한 게 최고야!"},
+    {q:"생강홍삼차 같은 건 드시나요?",     a:"생강홍삼차는 진짜 못 마셔요! 마시면 더 열이 올라서 미칠 것 같다고요!"},
+    {q:"참외랑 딸기 같이 드신 적 있나요?", a:"그 조합으로 먹으면 배가 뒤집히더라고요. 따로따로는 괜찮은데 같이는 안 돼요."},
+  ],
+  foods:['돼지고기수육','보리차','굴전','닭볶음탕','딸기','생강홍삼차','참외'],
+  ok:['돼지고기수육','보리차','굴전','딸기','참외'],
+  bestFoods:['돼지고기수육','굴전','딸기'],
+  allergy:['생강홍삼차'], incompatible:[['참외','딸기']],
+},
+
+{
+  name:"말티즈 봄이", sub:"복슬복슬 귀요미 (보호자 대리)", type:"반려견", emoji:"🐶", con:"소음인", difficulty:3,
+  appear:"작고 하얀 말티즈입니다. 체구가 아주 작고 마르며, 발이 차갑습니다. 보호자 말로는 항상 추워서 옷을 입고 다닌다고 합니다. 소극적이고 겁이 많다고 합니다.",
+  complaint:"(보호자) 봄이가 밥을 잘 안 먹고 배가 항상 차가운 것 같아요. 소화도 자주 못 하고.",
+  qs:[
+    {q:"봄이가 좋아하는 음식이 있나요?",   a:"(보호자) 따뜻한 음식은 잘 먹는데, 차가운 음식 주면 배탈을 자주 내요."},
+    {q:"활동량이 어떤가요?",               a:"(보호자) 소심하고 겁이 많아서 집에 있는 걸 좋아해요. 추운 걸 정말 싫어해요."},
+    {q:"수박 같은 차가운 과일은요?",       a:"(보호자) 수박은 절대 안 줘요. 한 번 줬더니 바로 배탈 나서 응급실 갔어요."},
+    {q:"꿀물이랑 메밀묵 같이 줘도 될까요?",a:"(보호자) 그 조합으로 줬다가 봄이가 이틀 내내 설사했어요. 절대 같이 주면 안 돼요."},
+  ],
+  foods:['닭가슴살찜','사과퓨레','꿀물','수박','생강차','메밀묵','찹쌀죽'],
+  ok:['닭가슴살찜','사과퓨레','꿀물','생강차','찹쌀죽'],
+  bestFoods:['닭가슴살찜','찹쌀죽','생강차'],
+  allergy:['수박'], incompatible:[['꿀물','메밀묵']],
+},
+
+];
+
+/* ═══════════════════════════════════════════
+   JUDGMENT ENGINE
+═══════════════════════════════════════════ */
+const OPPOSITE = {태양인:'태음인',태음인:'태양인',소양인:'소음인',소음인:'소양인'};
+
+function judgeResult(p, selCon, selFoods) {
+  const correctCon   = selCon === p.con;
+  const isOpposite   = selCon === OPPOSITE[p.con];
+  const allergy      = p.allergy  || [];
+  const incompatible = p.incompatible || [];
+  const bestFoods    = p.bestFoods || p.ok;
+
+  const allergyHits = selFoods.filter(f => allergy.includes(f));
+  const hasAllergy  = allergyHits.length > 0;
+  const hasIncompat = incompatible.some(pair => pair.every(f => selFoods.includes(f)));
+  const allInOk     = selFoods.every(f => p.ok.includes(f));
+  const allInBest   = selFoods.every(f => bestFoods.includes(f)) && selFoods.length >= 2;
+
+  // DEAD: opposite constitution + violations
+  if (isOpposite && (allergyHits.length >= 2 || hasIncompat || !allInOk)) return 'dead';
+  if (!correctCon && hasAllergy) return 'dead';
+  if (!correctCon && !allInOk)   return 'dead';
+
+  // BAD: wrong con OR any violation OR non-ok foods
+  if (!correctCon || hasAllergy || hasIncompat || !allInOk) return 'bad';
+
+  // PERFECT: all foods in bestFoods
+  if (allInBest) return 'perfect';
+
+  // PARTIAL: right con, ok foods, no violations, but not optimal
+  return 'partial';
+}
+
+function judgeReasons(p, selCon, selFoods) {
+  const reasons = [];
+  const bestFoods = p.bestFoods || p.ok;
+  if (selCon !== p.con)  reasons.push('체질 진단 오류 ('+selCon+' → 실제 '+p.con+')');
+  const ah = (p.allergy||[]).filter(f=>selFoods.includes(f));
+  if (ah.length) reasons.push('금기 음식 포함: '+ah.join(', '));
+  const ic = (p.incompatible||[]).find(pair=>pair.every(f=>selFoods.includes(f)));
+  if (ic) reasons.push('상극 조합: '+ic.join(' + '));
+  const nonOk = selFoods.filter(f=>!p.ok.includes(f));
+  if (nonOk.length) reasons.push('부적합 음식: '+nonOk.join(', '));
+  if (!reasons.length && !selFoods.every(f=>bestFoods.includes(f)))
+    reasons.push('현재 증상에 최적화된 음식이 아님');
+  return reasons;
+}
+
+/* ═══════════════════════════════════════════
+   GAME STATE
+═══════════════════════════════════════════ */
+let G = {};
+
+function sh(id){document.getElementById(id).classList.remove('hidden');}
+function hi(id){document.getElementById(id).classList.add('hidden');}
+function shuffle(a){for(let i=a.length-1;i>0;i--){let j=Math.floor(Math.random()*(i+1));[a[i],a[j]]=[a[j],a[i]];}return a;}
+
+/* build cabinet drawers once */
+(function(){
+  const cab=document.getElementById('cabinet');
+  for(let i=0;i<15;i++){const d=document.createElement('div');d.className='cab-drawer';cab.appendChild(d);}
+})();
+
+function startGame(){
+  const easy = PATIENTS.filter(p=>p.difficulty===1);
+  const rest  = shuffle(PATIENTS.filter(p=>p.difficulty>1));
+  G={
+    day:1, sus:0, rep:0,
+    queue:[...easy,...rest],
+    cur:null, selCon:null, selFoods:[],
+    asked:[], total:0, correct:0, perfect:0, wrong:0,
+    evSeen:new Set()
+  };
+  hi('title-screen'); sh('hud'); sh('game-screen');
+  loadPt();
+}
+
+function loadPt(){
+  if(G.queue.length===0){showVictory();return;}
+  const p=G.queue.shift();
+  G.cur=p; G.selCon=null; G.selFoods=[]; G.asked=[];
+  updHUD();
+
+  /* left panel */
+  document.getElementById('pt-badge').textContent=p.emoji;
+  document.getElementById('pt-name').textContent=p.name;
+  document.getElementById('pt-type').textContent=p.sub+' · '+p.type;
+  /* difficulty dots */
+  const dots   = ['●','●','●'].map((d,i)=>i<p.difficulty?'<span style="color:'+(p.difficulty===1?'#5a8040':p.difficulty===2?'#c8a040':'#cc5533')+'">●</span>':'<span style="color:#2e2010">●</span>').join('');
+  const lbl    = p.difficulty===1?'입문':p.difficulty===2?'중급':'고급';
+  document.getElementById('pt-diff').innerHTML=`<span class="diff-pip">${dots}</span><span class="diff-lbl">${lbl}</span>`;
+  document.getElementById('pt-appear').textContent=p.appear;
+  document.getElementById('pt-complaint').textContent='"'+p.complaint+'"';
+
+  /* dialogue */
+  document.getElementById('d-log').innerHTML='<div class="d-hint">손님에게 질문하여 단서를 수집하세요. 깊이 파고들수록 금기·상극 정보가 드러납니다.</div>';
+  const qa=document.getElementById('q-area');
+  qa.innerHTML='';
+  p.qs.forEach((q,i)=>{
+    const b=document.createElement('button');
+    b.className='q-btn'; b.id='qb'+i;
+    b.textContent='▶ '+q.q;
+    b.onclick=()=>askQ(i);
+    qa.appendChild(b);
+  });
+
+  /* prescription */
+  document.querySelectorAll('.c-btn').forEach(b=>b.classList.remove('sel'));
+  document.getElementById('sub-btn').disabled=true;
+  renderFoods();
+
+  /* clinic scene */
+  const charEl  = document.getElementById('pt-char');
+  const mainEm  = document.getElementById('pt-main-emoji');
+  const exprEm  = document.getElementById('pt-expr');
+  const bubble  = document.getElementById('react-bubble');
+  const tension = document.getElementById('tension-vfx');
+  mainEm.textContent=p.emoji;
+  mainEm.style.filter='';
+  exprEm.textContent=''; exprEm.classList.remove('vis');
+  bubble.textContent=''; bubble.classList.remove('vis');
+  tension.classList.remove('on');
+  charEl.style.animation='none';
+  charEl.style.opacity='1';
+  charEl.offsetHeight;
+  charEl.style.animation='enterSit 0.7s ease forwards';
+}
+
+function updHUD(){
+  document.getElementById('hud-day').textContent=G.day+'일차';
+  const pct=Math.min(G.sus,100);
+  document.getElementById('sus-fill').style.width=pct+'%';
+  document.getElementById('sus-pct').textContent=pct+'%';
+  document.getElementById('rep-disp').textContent='명성: '+G.rep;
+  const fill=document.getElementById('sus-fill');
+  if(G.sus<40)      fill.style.background='linear-gradient(90deg,#4a6a00,#8a9a00)';
+  else if(G.sus<70) fill.style.background='linear-gradient(90deg,#8b6a00,#cc8800)';
+  else              fill.style.background='linear-gradient(90deg,#8b3a00,#cc2200)';
+}
+
+function askQ(i){
+  if(G.asked.includes(i))return;
+  G.asked.push(i);
+  const q=G.cur.qs[i];
+  const log=document.getElementById('d-log');
+  const e=document.createElement('div'); e.className='d-entry';
+  e.innerHTML='<div class="d-q">홍영주: '+q.q+'</div><div class="d-a">'+G.cur.name+': "'+q.a+'"</div>';
+  log.appendChild(e); log.scrollTop=log.scrollHeight;
+  document.getElementById('qb'+i).disabled=true;
+}
+
+function pickConst(c){
+  G.selCon=c;
+  document.querySelectorAll('.c-btn').forEach(b=>b.classList.remove('sel'));
+  document.getElementById('c-'+c).classList.add('sel');
+  chkSubmit();
+}
+
+/* ── Food card system ── */
+function renderFoods(){
+  G.selFoods=[];
+  const grid=document.getElementById('food-grid');
+  grid.innerHTML='';
+  shuffle([...G.cur.foods]).forEach(f=>{
+    const card=document.createElement('div');
+    card.className='food-card';
+    card.dataset.food=f;
+    card.innerHTML=`<span class="card-icon">${FOOD_ICON[f]||'🍽'}</span><span class="card-name">${f}</span>`;
+    card.onclick=()=>toggleFood(f);
+    grid.appendChild(card);
+  });
+  updateFoodUI();
+}
+
+function toggleFood(f){
+  if(G.selFoods.includes(f)){
+    G.selFoods=G.selFoods.filter(x=>x!==f);
+  } else if(G.selFoods.length<3){
+    G.selFoods.push(f);
+  }
+  updateFoodUI();
+}
+
+function removeFood(f){
+  G.selFoods=G.selFoods.filter(x=>x!==f);
+  updateFoodUI();
+}
+
+function updateFoodUI(){
+  /* update cards */
+  document.querySelectorAll('.food-card').forEach(c=>{
+    const f=c.dataset.food;
+    const isSel=G.selFoods.includes(f);
+    c.classList.toggle('sel',  isSel);
+    c.classList.toggle('maxed', !isSel && G.selFoods.length>=3);
+  });
+  /* update slot */
+  const slot=document.getElementById('rx-slot-wrap');
+  if(G.selFoods.length===0){
+    slot.innerHTML='<span class="rx-slot-hint">아래 식품 카드를 선택하세요</span>';
+  } else {
+    slot.innerHTML=G.selFoods.map(f=>
+      `<span class="rx-item" onclick="removeFood('${f}')">` +
+      `${FOOD_ICON[f]||'🍽'} ${f}<span class="rx-item-x"> ✕</span></span>`
+    ).join('');
+  }
+  chkSubmit();
+}
+
+function chkSubmit(){
+  document.getElementById('sub-btn').disabled=!(G.selCon && G.selFoods.length>=2);
+}
+
+/* ── Submission ── */
+function submit(){
+  const p=G.cur;
+  const type=judgeResult(p, G.selCon, G.selFoods);
+  const susDelta = {perfect:-8, partial:+5, bad:+18, dead:+30}[type];
+  const repDelta = {perfect:+20, partial:+5, bad:0, dead:-15}[type];
+  G.sus=Math.max(0,Math.min(100,G.sus+susDelta));
+  G.rep+=repDelta; G.total++; G.day++;
+  if(type==='perfect'){ G.correct++; G.perfect++; }
+  else if(type==='partial') G.correct++;
+  else G.wrong++;
+  document.getElementById('sub-btn').disabled=true;
+  doReaction(p, type, G.selCon, [...G.selFoods], susDelta);
+}
+
+/* ── Reaction sequence ── */
+function doReaction(p, type, selCon, selFoods, susDelta){
+  const rxKey = (type==='perfect')?'perfect':(type==='partial')?'partial':'bad';
+  const rxData= REACTIONS[p.con][rxKey];
+  const charEl = document.getElementById('pt-char');
+  const mainEm = document.getElementById('pt-main-emoji');
+  const exprEm = document.getElementById('pt-expr');
+  const bubble = document.getElementById('react-bubble');
+  const tension= document.getElementById('tension-vfx');
+
+  tension.classList.add('on');
+
+  setTimeout(()=>{
+    tension.classList.remove('on');
+    exprEm.textContent=rxData.expr;
+    exprEm.classList.add('vis');
+    if(rxData.darken) mainEm.style.filter='brightness(.45) saturate(.18) hue-rotate(200deg)';
+    charEl.style.animation='none';
+    charEl.offsetHeight;
+    charEl.style.animation=rxData.anim;
+
+    setTimeout(()=>{
+      bubble.textContent=rxData.line;
+      bubble.classList.add('vis');
+
+      setTimeout(()=>{
+        bubble.classList.remove('vis');
+        setTimeout(()=>{
+          if(rxData.exit){
+            charEl.style.animation='none';
+            charEl.offsetHeight;
+            charEl.style.animation=rxData.exit;
+            setTimeout(()=>showResult(p,type,selCon,selFoods,susDelta),600);
+          } else {
+            showResult(p,type,selCon,selFoods,susDelta);
+          }
+        },280);
+      },1600);
+    },360);
+  },500);
+}
+
+/* ── Result overlay ── */
+function showResult(p, type, selCon, selFoods, susDelta){
+  const cssMap={perfect:'r-perfect',partial:'r-partial',bad:'r-bad',dead:'r-dead'};
+  const box=document.getElementById('r-box');
+  box.className='r-box '+cssMap[type];
+
+  const data={
+    perfect:{icon:'✨',title:'완전 회복!',     detail:'체질·음식·금기·상극 모두 완벽합니다! '+p.name+'의 건강이 완전히 회복되었습니다!'},
+    partial:{icon:'💊',title:'효과 미미',     detail:'체질 진단은 맞았지만, 이 손님의 현재 상태에 최적화된 처방이 아니었습니다.'},
+    bad:    {icon:'❌',title:'악화!',          detail:'처방 오류로 '+p.name+'의 상태가 악화되었습니다.'},
+    dead:   {icon:'💀',title:'중대 오진!',    detail:'심각한 오진입니다! '+p.name+'이 위독해졌습니다! 소문이 퍼질 것입니다.'},
+  }[type];
+
+  document.getElementById('r-icon').textContent=data.icon;
+  document.getElementById('r-title').textContent=data.title;
+  document.getElementById('r-detail').textContent=data.detail;
+
+  /* fail reasons */
+  const reasons=judgeReasons(p,selCon,selFoods);
+  const failEl=document.getElementById('r-fail');
+  if(reasons.length && type!=='perfect'){
+    failEl.innerHTML='⚠ '+reasons.join('<br>⚠ ');
+    failEl.classList.remove('hidden');
+  } else {
+    failEl.classList.add('hidden');
+  }
+
+  /* answer breakdown */
+  const bestFoods=p.bestFoods||p.ok;
+  const susTxt=susDelta>0?'의심도 +'+susDelta+'%':'의심도 '+susDelta+'%';
+  document.getElementById('r-answer').innerHTML=
+    '실제 체질: <span style="color:#e8c97e">'+p.con+'</span>'+(selCon===p.con?' ✓':' (진단: '+selCon+')')+'<br>'+
+    '처방 음식: <span style="color:#e8c97e">'+selFoods.join(', ')+'</span><br>'+
+    '최적 음식: '+bestFoods.join(', ')+'<br>'+
+    (p.allergy&&p.allergy.length?'금기 음식: <span style="color:#cc4422">'+p.allergy.join(', ')+'</span><br>':'')+
+    (p.incompatible&&p.incompatible.length?'상극 조합: <span style="color:#cc7033">'+p.incompatible.map(x=>x.join('+'))+'</span><br>':'')+
+    '<span style="color:'+(susDelta>0?'#cc5533':'#7ab87a')+'">'+susTxt+'</span>';
+
+  updHUD();
+  sh('result-overlay');
+}
+
+function nextPt(){
+  hi('result-overlay');
+  if(G.sus>=100){showGameOver();return;}
+  const thresholds=[50,75,90];
+  const hit=thresholds.find(t=>G.sus>=t&&!G.evSeen.has(t));
+  if(hit!==undefined){G.evSeen.add(hit);showEvent(hit);return;}
+  loadPt();
+}
+
+function showEvent(lvl){
+  let title,text;
+  if(lvl>=90){title='🚨 형사 경고';text='형사 두 명이 진료소 앞에 나타났습니다.\n\n"홍영주 씨, 다음에 사고가 나면 바로 연행합니다."\n\n의심도가 극도로 높습니다. 단 한 번의 오진도 허용되지 않습니다.';}
+  else if(lvl>=75){title='⚠️ 보건소 조사관 방문';text='보건소 조사관이 진료소를 찾아왔습니다.\n\n"홍영주 씨, 최근 오진 사례에 대해 정식 조사를 개시합니다."\n\n의심도가 위험 수준입니다.';}
+  else{title='📰 소문이 돌기 시작합니다';text='마을 주민들 사이에서 소문이 퍼지고 있습니다.\n\n"홍영주 선생 처방을 받고 나빠진 사람이 있다던데?"\n\n진료에 더욱 신중을 기해주세요.';}
+  document.getElementById('ev-title').textContent=title;
+  document.getElementById('ev-text').textContent=text;
+  sh('event-overlay');
+}
+
+function closeEvent(){hi('event-overlay');loadPt();}
+
+function statsHTML(){
+  const acc=G.total>0?Math.round(G.correct/G.total*100):0;
+  const perf=G.total>0?Math.round(G.perfect/G.total*100):0;
+  let rating;
+  if(perf>=70)rating='⭐⭐⭐ 전설의 체질왕';
+  else if(acc>=80)rating='⭐⭐ 훌륭한 체질사';
+  else if(acc>=50)rating='⭐ 무난한 체질인';
+  else rating='견습 체질사';
+  return `<div class="stat-row"><span class="s-lbl">총 진료 손님</span><span class="s-val">${G.total}명</span></div>
+<div class="stat-row"><span class="s-lbl">완전 회복 (최상)</span><span class="s-val">${G.perfect}명</span></div>
+<div class="stat-row"><span class="s-lbl">효과 미미 포함 성공</span><span class="s-val">${G.correct}명</span></div>
+<div class="stat-row"><span class="s-lbl">오진 (악화+사망)</span><span class="s-val">${G.wrong}명</span></div>
+<div class="stat-row"><span class="s-lbl">완전 처방 비율</span><span class="s-val">${perf}%</span></div>
+<div class="stat-row"><span class="s-lbl">최종 명성</span><span class="s-val">${G.rep}점</span></div>
+<div class="stat-row"><span class="s-lbl">최종 의심도</span><span class="s-val">${G.sus}%</span></div>
+<div class="stat-row"><span class="s-lbl">평가</span><span class="s-val">${rating}</span></div>`;
+}
+
+function showGameOver(){
+  hi('hud');hi('game-screen');
+  document.getElementById('go-stats').innerHTML=statsHTML();
+  sh('gameover-screen');
+}
+function showVictory(){
+  hi('hud');hi('game-screen');
+  document.getElementById('vic-stats').innerHTML=statsHTML();
+  sh('victory-screen');
+}
+function restart(){
+  hi('gameover-screen');hi('victory-screen');
+  sh('title-screen');
+}
+function showRef(){sh('ref-popup');}
+function closeRef(){hi('ref-popup');}
+</script>
+</body>
+</html>
